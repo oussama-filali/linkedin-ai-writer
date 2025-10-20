@@ -53,3 +53,7 @@ public/uploads/
 # Cache
 .cache/
 .parcel-cache/
+
+# GitHub Copilot instructions (privées)
+.github/copilot-instructions.md
+.github/copilot-instructions.local.md
