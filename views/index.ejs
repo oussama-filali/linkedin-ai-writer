@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Post Generator</title>
+</head>
+<body>
+  <h1>Générateur de posts LinkedIn IA</h1>
+  <form action="/generate" method="post">
+    <textarea name="resume" placeholder="Copie ici ton résumé LinkedIn" rows="6" cols="50"></textarea><br>
+    <input type="text" name="objectif" placeholder="Ex : Trouver un job / Se rendre visible"><br>
+    <label for="ton">Choisis un ton :</label>
+    <select name="ton" id="ton">
+      <option value="professionnel">Professionnel</option>
+      <option value="inspirant">Inspirant</option>
+      <option value="engagé">Engagé</option>
+    </select><br><br>
+    <button type="submit">Générer</button>
+  </form>
+</body>
+</html>
