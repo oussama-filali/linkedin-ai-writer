@@ -1,34 +1,237 @@
-# LinkedIn AI Writer - Générateur Intelligent de Posts
+# LinkedIn AI Writer - Générateur Intelligent de Posts LinkedIn
 
-## 🎯 Vision
-Un outil puissant et intelligent pour générer des posts LinkedIn professionnels avec **fact-checking automatique** et vérification des sources. Construit avec une architecture robuste séparant clairement les responsabilités.
+ Génère des posts LinkedIn professionnels avec **fact-checking automatique**, prédictions de performance, et filtrage de contenu.
 
-## 🏗️ Architecture
+## ⚡ Démarrage Rapide (5 min)
+
+```bash
+# 1. Diagnostic du système
+node test/diagnostic.js
+
+# 2. Démarrer le serveur
+node start-dev.js
+
+# 3. Tester l'API
+curl http://localhost:3000/health
+```
+
+## 📁 Structure du Projet
 
 ```
 linkedin-ai-writer/
-├── backend/                    # Serveur Express
-│   ├── controllers/            # Logique métier
-│   ├── services/               # Services réutilisables
-│   ├── middlewares/            # Validation, auth, etc.
-│   └── routes/                 # Définitions des routes API
-├── ia/                         # Système IA & Fact-checking
-│   ├── ai-service.js           # Service OpenAI principal
-│   ├── prompts/                # Templates de prompts
-│   └── fact-checking/          # Module de vérification
-├── database/                   # Base de données
-│   └── migrations/             # Scripts SQL de migration
-├── config/                     # Configuration centralisée
-├── frontend/                   # React + Tailwind (à venir)
-└── public/                     # Assets statiques
+├── README.md ← TU ES ICI (doc publique)
+├── .env (secrets - ignoré)
+│
+├── src/ ← CODE SOURCE
+│   ├── backend/ (Express server)
+│   ├── config/ (DB, OpenAI)
+│   ├── ia/ (Predictive, Fact-checking)
+│   └── database/ (migrations SQL)
+│
+├── test/ ← TESTS
+│   ├── diagnostic.js
+│   ├── check-migrations.js
+│   └── quick-check.js
+│
+├── docs/ ← DOCUMENTATION
+│   ├── START.md (démarrage)
+│   ├── TESTING.md (tests)
+│   ├── DATABASE.md (structure DB)
+│   └── ... autres docs
+│
+├── scripts/ (migrate.js)
+├── start-dev.js (serveur wrapper)
+└── package.json
 ```
+
+## 🎯 Fonctionnalités
+
+- ✅ **Génération IA** : Posts LinkedIn via GPT-3.5-turbo
+- ✅ **Fact-Checking** : Vérification automatique (Google + IA)
+- ✅ **Prédictions** : Estime engagement, viralité, timing optimal
+- ✅ **Filtre Contenu** : Bloque emojis, ASCII art, mentions IA
+- ✅ **API RESTful** : Endpoints POST /generate, /analyze, /verify
+- ✅ **Sécurité** : Rate limiting, CORS, Helmet
 
 ## 🚀 Installation
 
-### 1. Prérequis
-- Node.js 18+
-- PostgreSQL 14+ (gratuit: ElephantSQL ou Supabase)
-- Clé API OpenAI
+### 1. Variables d'Environnement
+
+Copie `.env.example` → `.env` et configure:
+
+```bash
+DATABASE_URL=postgresql://...  # Supabase pooler
+OPENAI_API_KEY=sk-proj-...     # OpenAI API
+GOOGLE_FACT_CHECK_API_KEY=...  # Google Fact Check (optional)
+```
+
+### 2. Dépendances
+
+```bash
+npm install
+```
+
+### 3. Base de Données
+
+```bash
+npm run db:migrate
+```
+
+### 4. Démarrer
+
+```bash
+npm run dev
+# OU
+node start-dev.js
+```
+
+## 📡 Endpoints API
+
+### Générer un Post
+
+```bash
+POST /api/posts/generate
+{
+  "resume": "Expert IA avec 5 ans exp",
+  "objectif": "Partager expertise",
+  "ton": "professionnel"
+}
+```
+
+### Analyser Prédictions
+
+```bash
+POST /api/predictions/analyze
+{
+  "content": "Post LinkedIn texte...",
+  "context": { "industry": "Tech" }
+}
+```
+
+### Vérifier Fact-Check
+
+```bash
+POST /api/predictions/verify
+{
+  "content": "La France a 68M habitants..."
+}
+```
+
+### Health Check
+
+```bash
+GET /health
+```
+
+## 📚 Documentation Complète
+
+| Fichier | Contenu |
+|---------|---------|
+| `/docs/START.md` | Démarrage détaillé |
+| `/docs/TESTING.md` | Scripts de test |
+| `/docs/DATABASE.md` | Structure DB |
+| `/docs/MISSION.md` | TODO critique |
+| `/docs/CORRECTIFS.md` | Problèmes résolus |
+
+## 🧪 Tests
+
+```bash
+# Diagnostic complet
+node test/diagnostic.js
+
+# Migrations check
+node test/check-migrations.js
+
+# DB connection
+node test-db.js
+
+# Quick check
+node test/quick-check.js
+```
+
+## ✅ État du Projet
+
+**Phase 1: Backend** ✅ COMPLÈTE
+- Express server
+- Routes API
+- OpenAI intégration
+- Fact-checking
+- Prédictions
+
+**Phase 2: Database** ⏳ EN COURS
+- Migrations à exécuter
+- Tables à créer
+- Indexes optimisation
+
+**Phase 3: Frontend** ⏸️ TODO
+- React + Tailwind
+- Dashboard
+- Auth JWT
+
+## 🔒 Sécurité
+
+- ✅ .env avec secrets ignoré
+- ✅ Rate limiting: 100 req/15min
+- ✅ CORS configuré
+- ✅ Helmet protection
+- ✅ Validation des inputs
+
+## 📦 Stack Technique
+
+- **Runtime**: Node.js 18+
+- **Framework**: Express 5.1.0
+- **DB**: PostgreSQL (Supabase)
+- **AI**: OpenAI GPT-3.5-turbo
+- **API**: Google Fact Check
+- **Sécurité**: Helmet, CORS, Rate Limit
+- **Validation**: express-validator
+
+## 🐛 Troubleshooting
+
+**Serveur ne démarre pas?**
+```bash
+node test/diagnostic.js
+```
+
+**Erreur DB?**
+```bash
+npm run db:migrate
+node test-db.js
+```
+
+**Erreur API?**
+- Vérifie `.env` variables
+- Teste `/health` endpoint
+
+## 📝 Commandes Npm
+
+```bash
+npm run dev              # Démarrer serveur
+npm run db:migrate       # Migrations SQL
+npm start               # Démarrer (production)
+npm install             # Dépendances
+```
+
+## 🎓 Architecture Decisions
+
+- **Séparation Backend/Frontend** : Services IA, Controllers, Routes indépendants
+- **Supabase Pooler** : IPv4 compatible, auto-scalable
+- **Migrations versionnées** : Historique complet des DB changes
+- **Health endpoint** : Diagnostic complet du système
+
+## 📖 Documentation Locale
+
+Tous les docs détaillés sont dans `/docs/` pour ne pas clutteriser le README publique.
+
+---
+
+**Prêt à démarrer?**
+
+```bash
+node test/diagnostic.js && node start-dev.js
+```
+
+**Besoin d'aide?** Voir `/docs/START.md`
 
 ### 2. Installation des dépendances
 ```bash
