@@ -2,14 +2,19 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "linkedin-ai-writer",
   "version": "2.0.0",
-  "main": "app.js",
+  "main": "src/backend/app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "db:migrate": "psql -U postgres -d linkedin_ai_writer -f database/migrations/001_initial_schema.sql",
+    "start": "node src/backend/app.js",
+    "dev": "nodemon src/backend/app.js",
+    "db:migrate": "node scripts/migrate.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["linkedin", "ai", "content-generation", "fact-checking"],
+  "keywords": [
+    "linkedin",
+    "ai",
+    "content-generation",
+    "fact-checking"
+  ],
   "author": "",
   "license": "ISC",
   "description": "Générateur intelligent de posts LinkedIn avec fact-checking automatique",
@@ -18,7 +23,6 @@
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-rate-limit": "^7.1.0",
     "express-validator": "^7.0.0",

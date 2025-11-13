@@ -27,27 +27,60 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files
-app.use(express.static('public'));
-
-// Views (pour compatibilité temporaire)
-app.set('view engine', 'ejs');
-
 // API Routes
-const postsRouter = require('./backend/routes/posts');
+const postsRouter = require('./routes/posts');
+const predictionsRouter = require('./routes/predictions');
+const debugRouter = require('./routes/debug');
+
 app.use('/api/posts', postsRouter);
+app.use('/api/predictions', predictionsRouter);
+app.use('/api/debug', debugRouter);
 
-// Legacy routes (à migrer vers API)
-const legacyRoutes = require('./routes/index');
-app.use('/', legacyRoutes);
+// Log des routes disponibles
+console.log('📡 Routes API disponibles:');
+console.log('   POST /api/posts/generate');
+console.log('   POST /api/posts/improve');
+console.log('   POST /api/posts/check');
+console.log('   GET  /api/posts/history');
+console.log('   POST /api/predictions/analyze');
+console.log('   POST /api/predictions/verify');
+console.log('   POST /api/predictions/compare');
+console.log('   POST /api/predictions/timing');
+console.log('   GET  /health');
 
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
+// Health check (avec diagnostics)
+const db = require('../config/database');
+app.get('/health', async (req, res) => {
+    const start = Date.now();
+    const diagnostics = {
+        status: 'OK',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
+        uptime: process.uptime(),
+        services: {
+            api: 'up',
+            db: 'unknown',
+            openaiKeyPresent: Boolean(process.env.OPENAI_API_KEY),
+            googleFactCheckKeyPresent: Boolean(process.env.GOOGLE_FACT_CHECK_API_KEY)
+        }
+    };
+
+    // Test DB (si DATABASE_URL configurée)
+    try {
+        if (process.env.DATABASE_URL) {
+            const result = await db.query('SELECT 1 as ok');
+            diagnostics.services.db = result?.rows?.[0]?.ok === 1 ? 'up' : 'degraded';
+        } else {
+            diagnostics.services.db = 'not-configured';
+        }
+    } catch (err) {
+        diagnostics.services.db = 'down';
+        diagnostics.dbError = err.message;
+    } finally {
+        diagnostics.latencyMs = Date.now() - start;
+    }
+
+    const httpCode = diagnostics.services.api === 'up' && diagnostics.services.db !== 'down' ? 200 : 503;
+    res.status(httpCode).json(diagnostics);
 });
 
 // 404 handler

@@ -1,5 +1,5 @@
-const openai = require('../../config/openai');
-const promptTemplates = require('../prompts/linkedin-prompts');
+const openai = require('../config/openai');
+const promptTemplates = require('./prompts/linkedin-prompts');
 
 class AIService {
     constructor() {
