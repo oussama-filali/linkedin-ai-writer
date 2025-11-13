@@ -1,14 +1,14 @@
 require('dotenv').config();
-
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Sécurité
+// Middlewares de sécurité
 app.use(helmet());
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
@@ -23,18 +23,16 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsers
+app.use(bodyParser.json({ extended: true, limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
-// API Routes
+// Routes
 const postsRouter = require('./routes/posts');
 const predictionsRouter = require('./routes/predictions');
-const debugRouter = require('./routes/debug');
 
 app.use('/api/posts', postsRouter);
 app.use('/api/predictions', predictionsRouter);
-app.use('/api/debug', debugRouter);
 
 // Log des routes disponibles
 console.log('📡 Routes API disponibles:');
@@ -64,10 +62,15 @@ app.get('/health', async (req, res) => {
         }
     };
 
-    // Test DB (si DATABASE_URL configurée)
+    // Test DB (si DATABASE_URL configurée) - async timeout protection
     try {
         if (process.env.DATABASE_URL) {
-            const result = await db.query('SELECT 1 as ok');
+            // Utiliser un timeout court pour ne pas bloquer
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('DB query timeout')), 2000)
+            );
+            const queryPromise = db.query('SELECT 1 as ok');
+            const result = await Promise.race([queryPromise, timeoutPromise]);
             diagnostics.services.db = result?.rows?.[0]?.ok === 1 ? 'up' : 'degraded';
         } else {
             diagnostics.services.db = 'not-configured';
@@ -101,15 +104,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM reçu, arrêt gracieux...');
-    server.close(() => {
-        console.log('Serveur fermé');
-        process.exit(0);
-    });
-});
-
+// Démarrage du serveur
 const server = app.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════╗
@@ -121,3 +116,14 @@ const server = app.listen(PORT, () => {
 ╚════════════════════════════════════════╝
     `);
 });
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM reçu, arrêt gracieux...');
+    server.close(() => {
+        console.log('Serveur fermé');
+        process.exit(0);
+    });
+});
+
+module.exports = app;

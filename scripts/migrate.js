@@ -8,6 +8,9 @@ const fs = require('fs');
 const { Client } = require('pg');
 require('dotenv').config();
 
+// Bypass TLS pour Supabase pooler (certificats auto-signés)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 (async () => {
   const migrationsDir = path.resolve(__dirname, '../src/database/migrations');
   const files = fs
@@ -20,7 +23,13 @@ require('dotenv').config();
     process.exit(1);
   }
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
+  const isSupabase = process.env.DATABASE_URL && /supabase\.com|pooler\.supabase\.com/i.test(process.env.DATABASE_URL);
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: isSupabase 
+      ? { rejectUnauthorized: false, checkServerIdentity: () => {} }
+      : false
+  });
 
   try {
     await client.connect();
