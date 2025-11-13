@@ -29,9 +29,7 @@ class AIPredictiveService {
                 messages: [
                     {
                         role: 'system',
-                        content: `Tu es un expert en analyse de contenu LinkedIn avec 10 ans d'expérience.
-Tu évalues les posts selon des critères objectifs basés sur des données réelles d'engagement LinkedIn.
-Réponds UNIQUEMENT en JSON valide, sans commentaire additionnel.`
+                        content: `Tu es un expert en analyse de contenu LinkedIn avec une décennie d'expérience. Évalue les posts avec objectivité en te basant sur les patterns d'engagement réels de la plateforme. Fournis une analyse en JSON pur, sans fioritures.`
                     },
                     {
                         role: 'user',
@@ -59,19 +57,19 @@ Réponds UNIQUEMENT en JSON valide, sans commentaire additionnel.`
      * @private
      */
     _buildAnalysisPrompt(content, context) {
-        return `Analyse ce post LinkedIn et prédit ses performances potentielles.
+        return `Analyse ce post LinkedIn et estime son potentiel d'engagement.
 
-POST:
+Voici le post :
 """
 ${content}
 """
 
-CONTEXTE:
-- Secteur: ${context.industry || 'Non spécifié'}
-- Audience cible: ${context.targetAudience || 'Professionnels généralistes'}
-- Nombre de connexions: ${context.connectionsCount || 500}
+Contexte de publication :
+• Secteur : ${context.industry || 'Non spécifié'}
+• Audience : ${context.targetAudience || 'Professionnels généralistes'}
+• Réseau : ${context.connectionsCount || 500} connexions
 
-Évalue selon ces critères et retourne un JSON avec cette structure EXACTE:
+Retourne ton analyse sous forme de JSON avec exactement cette structure :
 
 {
   "overallScore": <nombre entre 0 et 100>,
@@ -90,13 +88,13 @@ CONTEXTE:
     "storytelling": <0-10>
   },
   "strengths": [
-    "<force 1>",
-    "<force 2>",
-    "<force 3>"
+    "première force identifiée",
+    "deuxième force identifiée",
+    "troisième force identifiée"
   ],
   "weaknesses": [
-    "<faiblesse 1>",
-    "<faiblesse 2>"
+    "première faiblesse à corriger",
+    "deuxième faiblesse à corriger"
   ],
   "viralityFactors": {
     "hasHook": <true/false>,
@@ -105,11 +103,11 @@ CONTEXTE:
     "controversyRisk": <"low"/"medium"/"high">
   },
   "improvements": [
-    "<suggestion concrète 1>",
-    "<suggestion concrète 2>",
-    "<suggestion concrète 3>"
+    "première suggestion d'amélioration",
+    "deuxième suggestion d'amélioration",
+    "troisième suggestion d'amélioration"
   ],
-  "optimalPublicationTime": "<jour et heure recommandés>",
+  "optimalPublicationTime": "jour et créneau horaire recommandés",
   "targetAudienceMatch": <pourcentage>
 }`;
     }
@@ -144,11 +142,11 @@ CONTEXTE:
      * @private
      */
     _generateVerdict(score) {
-        if (score >= 85) return 'EXCELLENT - Fort potentiel viral';
-        if (score >= 70) return 'TRÈS BON - Engagement élevé attendu';
-        if (score >= 55) return 'BON - Performance solide';
-        if (score >= 40) return 'MOYEN - Améliorations nécessaires';
-        return 'FAIBLE - Révision recommandée';
+        if (score >= 85) return 'Excellent potentiel viral';
+        if (score >= 70) return 'Très bon engagement attendu';
+        if (score >= 55) return 'Performance solide';
+        if (score >= 40) return 'Améliorations nécessaires';
+        return 'Révision recommandée';
     }
 
     /**
@@ -175,7 +173,7 @@ CONTEXTE:
         return {
             winner: predictions[0],
             allVariants: predictions,
-            recommendation: `La variante ${predictions[0].index + 1} est la plus performante avec un score de ${predictions[0].overallScore}/100`,
+            recommendation: `La variante ${predictions[0].index + 1} offre le meilleur potentiel avec un score de ${predictions[0].overallScore}/100`,
             comparison: this._generateComparison(predictions)
         };
     }
@@ -246,25 +244,25 @@ CONTEXTE:
                 optimal: ['Mardi 8h-9h', 'Mercredi 12h-13h', 'Jeudi 10h-11h'],
                 good: ['Lundi 9h-11h', 'Mercredi 16h-17h'],
                 avoid: ['Vendredi après 15h', 'Week-end'],
-                reasoning: 'Contenu éducatif performant en début de semaine, pendant pauses'
+                reasoning: 'Le contenu éducatif performe mieux en début de semaine, notamment pendant les pauses'
             },
             announcement: {
                 optimal: ['Lundi 9h-10h', 'Jeudi 8h-9h'],
                 good: ['Mardi 9h-11h', 'Mercredi 9h-10h'],
                 avoid: ['Vendredi', 'Week-end'],
-                reasoning: 'Annonces captent attention en début de semaine'
+                reasoning: 'Les annonces captent mieux lattention en début de semaine'
             },
             discussion: {
                 optimal: ['Mardi 12h-14h', 'Mercredi 12h-14h'],
                 good: ['Lundi 13h-15h', 'Jeudi 12h-14h'],
                 avoid: ['Lundi matin', 'Vendredi après-midi'],
-                reasoning: 'Questions génèrent discussions pendant pauses déjeuner'
+                reasoning: 'Les questions engagent davantage pendant les pauses déjeuner'
             },
             general: {
                 optimal: ['Mardi 9h-11h', 'Mercredi 12h-13h', 'Jeudi 9h-11h'],
                 good: ['Lundi 10h-12h', 'Vendredi 8h-10h'],
                 avoid: ['Week-end', 'Après 18h en semaine'],
-                reasoning: 'Milieu de semaine optimal pour engagement général'
+                reasoning: 'Le milieu de semaine offre le meilleur engagement global'
             }
         };
 

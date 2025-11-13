@@ -1,10 +1,10 @@
 /**
- * Filtre de contenu strict pour garantir un contenu professionnel
- * Bloque : émojis, ASCII décoratif, mentions d'IA
+ * Filtre de contenu pour garantir un rendu professionnel
+ * Bloque les émojis, symboles ASCII décoratifs et mentions d'IA
  */
 class ContentFilter {
     constructor() {
-        // Patterns regex pour détecter les éléments interdits
+        // Patterns pour détecter les éléments non professionnels
         this.emojiPattern = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
         
         this.asciiDecorativePatterns = [
@@ -48,34 +48,34 @@ class ContentFilter {
             violations.push({
                 type: 'EMOJI_DETECTED',
                 severity: 'HIGH',
-                message: 'Émojis détectés - Contenu non professionnel',
+                message: 'Émojis détectés dans le contenu',
                 matches: content.match(this.emojiPattern) || []
             });
         }
 
-        // 2. Vérification ASCII décoratif
+        // 2. Vérification des symboles ASCII décoratifs
         const asciiViolations = this.detectAsciiArt(content);
         if (asciiViolations.length > 0) {
             violations.push({
                 type: 'ASCII_DECORATIVE',
                 severity: 'HIGH',
-                message: 'Caractères ASCII décoratifs détectés',
+                message: 'Symboles ASCII décoratifs présents',
                 matches: asciiViolations
             });
         }
 
-        // 3. Vérification mentions d'IA
+        // 3. Vérification des mentions d'IA
         const aiMentions = this.detectAIMentions(content);
         if (aiMentions.length > 0) {
             violations.push({
                 type: 'AI_MENTION',
                 severity: 'CRITICAL',
-                message: 'Mentions explicites d\'IA détectées',
+                message: 'Références à l\'IA détectées',
                 matches: aiMentions
             });
         }
 
-        // 4. Vérifications professionnelles
+        // 4. Vérification de la longueur
         const lengthCheck = this.checkLength(content);
         if (!lengthCheck.valid) {
             violations.push({
@@ -87,13 +87,13 @@ class ContentFilter {
             });
         }
 
-        // 5. Capitales excessives (SPAM-like)
+        // 5. Majuscules excessives
         const capsCheck = this.checkExcessiveCapitals(content);
         if (capsCheck.excessive) {
             warnings.push({
                 type: 'EXCESSIVE_CAPITALS',
                 severity: 'LOW',
-                message: 'Majuscules excessives détectées (style spam)',
+                message: 'Trop de majuscules consécutives',
                 count: capsCheck.count
             });
         }
@@ -104,7 +104,7 @@ class ContentFilter {
             warnings.push({
                 type: 'EXCESSIVE_PUNCTUATION',
                 severity: 'LOW',
-                message: 'Ponctuation excessive (!!! ???)',
+                message: 'Ponctuation excessive présente',
                 count: punctuationCheck.count
             });
         }
@@ -244,7 +244,7 @@ class ContentFilter {
      */
     generateRecommendation(violations, warnings) {
         if (violations.length === 0 && warnings.length === 0) {
-            return 'Contenu conforme aux standards professionnels';
+            return 'Le contenu respecte les standards professionnels';
         }
 
         const recommendations = [];
@@ -252,13 +252,13 @@ class ContentFilter {
         violations.forEach(v => {
             switch (v.type) {
                 case 'EMOJI_DETECTED':
-                    recommendations.push('Supprimez tous les émojis pour un ton professionnel');
+                    recommendations.push('Retirez les émojis pour un ton plus professionnel');
                     break;
                 case 'ASCII_DECORATIVE':
-                    recommendations.push('Retirez les caractères ASCII décoratifs (boîtes, symboles)');
+                    recommendations.push('Supprimez les symboles décoratifs (boîtes, formes, etc.)');
                     break;
                 case 'AI_MENTION':
-                    recommendations.push('CRITIQUE : Ne mentionnez jamais l\'utilisation d\'une IA');
+                    recommendations.push('Évitez toute mention d\'outil ou d\'assistance IA');
                     break;
                 case 'LENGTH_INVALID':
                     recommendations.push(v.message);
@@ -269,41 +269,41 @@ class ContentFilter {
         warnings.forEach(w => {
             switch (w.type) {
                 case 'EXCESSIVE_CAPITALS':
-                    recommendations.push('Réduisez les majuscules (style trop agressif)');
+                    recommendations.push('Réduisez l\'usage des majuscules');
                     break;
                 case 'EXCESSIVE_PUNCTUATION':
-                    recommendations.push('Limitez les points d\'exclamation et d\'interrogation');
+                    recommendations.push('Modérez la ponctuation exclamative');
                     break;
             }
         });
 
-        return recommendations.join(' | ');
+        return recommendations.join(' • ');
     }
 
     /**
-     * Nettoie automatiquement le contenu (si possible)
+     * Nettoie automatiquement le contenu
      * @param {string} content - Contenu à nettoyer
-     * @returns {Object} Contenu nettoyé + rapport
+     * @returns {Object} Contenu nettoyé avec rapport des modifications
      */
     autoClean(content) {
         let cleaned = content;
         const changes = [];
 
-        // 1. Suppression des émojis
+        // Suppression des émojis
         if (this.emojiPattern.test(cleaned)) {
             cleaned = cleaned.replace(this.emojiPattern, '');
-            changes.push('Émojis supprimés');
+            changes.push('Émojis retirés');
         }
 
-        // 2. Suppression ASCII décoratif
+        // Suppression des symboles ASCII décoratifs
         this.asciiDecorativePatterns.forEach(pattern => {
             if (pattern.test(cleaned)) {
                 cleaned = cleaned.replace(pattern, '');
-                changes.push('Caractères ASCII décoratifs supprimés');
+                changes.push('Symboles décoratifs supprimés');
             }
         });
 
-        // 3. Suppression mentions d'IA (remplacées par formulations génériques)
+        // Masquage des mentions d'IA
         this.aiMentionPatterns.forEach(pattern => {
             if (pattern.test(cleaned)) {
                 cleaned = cleaned.replace(pattern, '[contenu professionnel]');
@@ -311,7 +311,7 @@ class ContentFilter {
             }
         });
 
-        // 4. Nettoyage espaces multiples
+        // Nettoyage des espaces multiples
         cleaned = cleaned.replace(/\s{3,}/g, ' ').trim();
 
         return {

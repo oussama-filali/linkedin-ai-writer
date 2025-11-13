@@ -35,59 +35,66 @@ const tones = {
 function getSystemPrompt(ton) {
     const toneConfig = tones[ton] || tones.professionnel;
     
-    return `Tu es un expert en rédaction de posts LinkedIn. Ton objectif est de créer des posts ${toneConfig.description}.
+    return `Tu es un rédacteur expert LinkedIn qui écrit comme un humain ${toneConfig.description}.
 
-Règles STRICTES à respecter:
-1. TOUJOURS vérifier la véracité des informations - NE JAMAIS inventer de statistiques ou faits
-2. Si tu mentionnes des données, elles doivent être vérifiables ou clairement présentées comme estimation personnelle
-3. Longueur optimale: 150-300 mots
-4. Format LinkedIn: paragraphes courts, espaces pour la lisibilité
-5. PAS de hashtags excessifs (max 3-5 pertinents à la fin)
-6. PAS de call-to-action agressif type "clique ici"
-7. Ton ${ton}:
-${toneConfig.guidelines.map(g => `   - ${g}`).join('\n')}
+RÈGLE ABSOLUE ANTI-HALLUCINATION :
+N'INVENTE JAMAIS de statistiques, chiffres, études, noms d'entreprises, dates ou faits que tu ne peux pas vérifier. Si tu n'as pas l'information, utilise des formulations génériques basées sur l'expérience personnelle : "d'après mon expérience", "j'ai constaté que", "dans ma pratique".
 
-Si tu n'as pas assez d'informations pour créer un post de qualité avec des faits vérifiables, DEMANDE plus de contexte à l'utilisateur.`;
+Ton style d'écriture doit être naturel et fluide. Évite absolument :
+• Les structures trop formatées avec des numéros ou des puces
+• Les phrases robotiques et les formules répétitives
+• Les emojis excessifs et les symboles ASCII
+• Les hashtags en masse (3 à 5 maximum, à la fin uniquement)
+• Les appels à l'action trop commerciaux
+• LES DONNÉES INVENTÉES OU NON VÉRIFIABLES
+
+Ce que tu dois privilégier :
+Le post doit faire entre 150 et 300 mots, organisé en paragraphes courts et aérés pour faciliter la lecture. ${toneConfig.guidelines.join('. ')}. 
+
+L'authenticité prime : base-toi EXCLUSIVEMENT sur les informations fournies par l'utilisateur. Si tu manques de contexte ou de données concrètes, formule les choses comme des observations personnelles, pas comme des faits universels.
+
+Écris comme si tu parlais à un collègue autour d'un café, pas comme si tu rédigeais un manuel technique.`;
 }
 
 function getUserPrompt(resume, objectif, sujet) {
-    let prompt = `Contexte professionnel de l'utilisateur:
+    let prompt = `Voici mon parcours professionnel :
 ${resume}
 
-Objectif du post: ${objectif}`;
+Je souhaite publier un post pour ${objectif}.`;
 
     if (sujet) {
-        prompt += `\n\nSujet spécifique: ${sujet}`;
+        prompt += ` Plus précisément, je veux parler de ${sujet}.`;
     }
 
-    prompt += `\n\nCrée un post LinkedIn engageant qui:
-1. Capte l'attention dès les 2 premières lignes
-2. Apporte de la valeur au réseau
-3. Reflète l'authenticité et l'expertise de l'utilisateur
-4. Encourage l'engagement (likes, commentaires, partages)
-5. Se base UNIQUEMENT sur des informations vérifiables ou l'expérience personnelle décrite
+    prompt += `
 
-NE JAMAIS inventer de statistiques ou faits. Si besoin de données, utilise des formulations comme "d'après mon expérience" ou "j'ai observé que".`;
+Rédige un post LinkedIn qui accroche dès les premières lignes, apporte une vraie valeur ajoutée à mon réseau, et reflète qui je suis professionnellement. Le post doit sonner authentique et naturel, comme si c'était moi qui l'avais écrit en prenant mon temps.
+
+CONSIGNES STRICTES ANTI-HALLUCINATION :
+• N'invente AUCUNE statistique (ex: "85% des entreprises...", "selon une étude de 2023...")
+• N'invente AUCUN chiffre précis que je n'ai pas fourni
+• N'invente AUCUNE citation, étude, source ou nom d'auteur
+• N'invente AUCUN nom d'entreprise ou de personne que je n'ai pas mentionné
+• Si tu veux donner un exemple, utilise des formulations comme : "j'ai remarqué que", "dans mon expérience", "j'ai pu observer"
+
+Base-toi UNIQUEMENT sur les informations que je t'ai données. L'objectif est d'engager la conversation de manière authentique, pas de faire un argumentaire bourré de fausses données.`;
 
     return prompt;
 }
 
 function getFactCheckPrompt(content) {
-    return `Analyse le contenu suivant et identifie toutes les affirmations factuelles qui nécessitent une vérification:
+    return `Analyse ce contenu et repère les affirmations qui pourraient nécessiter une vérification :
 
 ${content}
 
-Pour chaque affirmation factuelle identifiée, indique:
-1. L'affirmation exacte
-2. Pourquoi elle nécessite vérification
-3. Le niveau de confiance (faible/moyen/élevé) si elle peut être facilement vérifiée
+Pour chaque affirmation douteuse ou vérifiable, note l'affirmation elle-même, la raison pour laquelle elle pourrait être problématique, ton niveau de confiance dans sa véracité, et sa catégorie.
 
-Format de réponse JSON:
+Réponds uniquement en JSON avec cette structure :
 {
     "claims": [
         {
-            "text": "affirmation à vérifier",
-            "reason": "pourquoi vérifier",
+            "text": "l'affirmation concernée",
+            "reason": "pourquoi cela mérite vérification",
             "confidence": "faible|moyen|élevé",
             "category": "statistique|fait historique|étude|autre"
         }

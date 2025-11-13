@@ -35,7 +35,7 @@ class FactCheckingService {
                 messages: [
                     { 
                         role: 'system', 
-                        content: 'Tu es un expert en fact-checking. Analyse le contenu et identifie les affirmations factuelles à vérifier.'
+                        content: 'Tu es un expert en vérification factuelle. Analyse le contenu et repère les affirmations qui nécessitent une vérification.'
                     },
                     { role: 'user', content: prompt }
                 ],
@@ -237,7 +237,7 @@ class FactCheckingService {
         // Évaluer le niveau de risque
         if (analysis.riskLevel === 'élevé') {
             result.safe = false;
-            result.warnings.push('Contenu à haut risque : contient des affirmations non vérifiées');
+            result.warnings.push('Le contenu contient des affirmations qui nécessitent vérification');
         }
 
         if (analysis.needsVerification && analysis.claims.length > 0) {
@@ -247,10 +247,10 @@ class FactCheckingService {
 
             if (unverifiedClaims.length > 0) {
                 result.warnings.push(
-                    `${unverifiedClaims.length} affirmation(s) non vérifiée(s) détectée(s)`
+                    `${unverifiedClaims.length} affirmation(s) non vérifiable(s) détectée(s)`
                 );
                 result.recommendations.push(
-                    'Reformulez les affirmations en tant qu\'opinions personnelles ou ajoutez des sources'
+                    'Reformulez en tant qu\'expérience personnelle ou ajoutez des sources vérifiables'
                 );
             }
         }
@@ -269,19 +269,19 @@ class FactCheckingService {
             return content; // Aucune amélioration nécessaire
         }
 
-        const improvementPrompt = `Contenu original:
+        const improvementPrompt = `Voici le contenu original :
 ${content}
 
-Affirmations problématiques identifiées:
+Affirmations qui posent problème :
 ${analysis.claims.map((c, i) => `${i + 1}. "${c.text}" - ${c.reason}`).join('\n')}
 
-Réécris ce contenu en:
-1. Transformant les affirmations factuelles non vérifiées en opinions personnelles ("d'après mon expérience", "j'ai observé que")
-2. Gardant le même ton et message global
-3. Maintenant l'engagement et l'authenticité
-4. Ajoutant des nuances appropriées
+Réécris ce texte en suivant ces principes :
+• Transforme les affirmations non vérifiées en observations personnelles (utilise "d'après mon expérience", "j'ai constaté que", etc.)
+• Garde le même ton et le même message
+• Conserve l'authenticité et l'engagement
+• Ajoute des nuances appropriées
 
-Contenu amélioré:`;
+Donne-moi la version améliorée.`;
 
         try {
             const response = await openai.chat.completions.create({
@@ -289,7 +289,7 @@ Contenu amélioré:`;
                 messages: [
                     { 
                         role: 'system', 
-                        content: 'Tu es un expert en rédaction factuelle. Améliore le contenu pour le rendre plus véridique sans perdre son impact.'
+                        content: 'Tu es un expert en rédaction factuelle. Améliore le contenu pour le rendre plus véridique tout en préservant son impact et son naturel.'
                     },
                     { role: 'user', content: improvementPrompt }
                 ],
