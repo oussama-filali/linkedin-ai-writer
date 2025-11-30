@@ -24,6 +24,8 @@ router.post('/improve', validateRequest.improvePost, postController.improvePost)
  */
 router.get('/history', postController.getHistory);
 
+router.get('/:id', postController.getPostById);
+
 /**
  * @route   POST /api/posts/check
  * @desc    Vérifie le fact-checking d'un contenu

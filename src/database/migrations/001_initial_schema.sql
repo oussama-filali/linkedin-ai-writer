@@ -41,10 +41,10 @@ CREATE TABLE IF NOT EXISTS generations_history (
 );
 
 -- Index pour améliorer les performances
-CREATE INDEX idx_generations_user_id ON generations_history(user_id);
-CREATE INDEX idx_generations_created_at ON generations_history(created_at DESC);
-CREATE INDEX idx_generations_ton ON generations_history(ton);
-CREATE INDEX idx_prompts_user_id ON prompts_templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_generations_created_at ON generations_history(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_generations_ton ON generations_history(ton);
+CREATE INDEX IF NOT EXISTS idx_prompts_user_id ON prompts_templates(user_id);
 
 -- Fonction pour mettre à jour updated_at automatiquement
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -56,12 +56,15 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers pour updated_at
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_prompts_updated_at ON prompts_templates;
 CREATE TRIGGER update_prompts_updated_at BEFORE UPDATE ON prompts_templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_generations_updated_at ON generations_history;
 CREATE TRIGGER update_generations_updated_at BEFORE UPDATE ON generations_history
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

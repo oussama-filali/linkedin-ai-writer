@@ -1,5 +1,26 @@
 # 🎯 Guide d'Utilisation - IA Améliorée
 
+## 🔐 Authentification et Gestion des Emails
+
+### Problème d'email expiré ?
+
+Si vous rencontrez l'erreur `Email link is invalid or has expired`, consultez la [documentation complète](./probleme-email-expire.md).
+
+**Solution rapide** :
+1. Ouvrez le lien expiré dans votre navigateur
+2. Cliquez sur "📧 Renvoyer l'email"
+3. Entrez votre adresse email
+4. Vérifiez votre boîte de réception et cliquez rapidement sur le nouveau lien
+
+**Via API** :
+```bash
+curl -X POST http://localhost:3000/api/auth/resend-confirmation \
+  -H "Content-Type: application/json" \
+  -d '{"email": "votre@email.com"}'
+```
+
+---
+
 ## 🌟 Nouveauté : Réponses Plus Naturelles
 
 L'IA génère maintenant des posts LinkedIn qui sonnent **authentiquement humains**, sans les structures robotiques et les symboles ASCII.

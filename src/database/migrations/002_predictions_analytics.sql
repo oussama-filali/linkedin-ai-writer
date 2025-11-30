@@ -14,13 +14,13 @@ CREATE TABLE IF NOT EXISTS predictions_analytics (
 );
 
 -- Index pour performances
-CREATE INDEX idx_predictions_user ON predictions_analytics(user_id);
-CREATE INDEX idx_predictions_created ON predictions_analytics(created_at DESC);
-CREATE INDEX idx_predictions_score ON predictions_analytics(filter_score DESC);
+CREATE INDEX IF NOT EXISTS idx_predictions_user ON predictions_analytics(user_id);
+CREATE INDEX IF NOT EXISTS idx_predictions_created ON predictions_analytics(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_predictions_score ON predictions_analytics(filter_score DESC);
 
 -- Index GIN pour recherche JSON
-CREATE INDEX idx_predictions_data ON predictions_analytics USING GIN (prediction_data);
-CREATE INDEX idx_fact_check_data ON predictions_analytics USING GIN (fact_check_result);
+CREATE INDEX IF NOT EXISTS idx_predictions_data ON predictions_analytics USING GIN (prediction_data);
+CREATE INDEX IF NOT EXISTS idx_fact_check_data ON predictions_analytics USING GIN (fact_check_result);
 
 -- Ajout de colonnes à la table generations_history existante
 ALTER TABLE generations_history ADD COLUMN IF NOT EXISTS prediction_score INTEGER;
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS fact_check_sources (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_fact_sources_generation ON fact_check_sources(generation_id);
-CREATE INDEX idx_fact_sources_confidence ON fact_check_sources(confidence_score DESC);
+CREATE INDEX IF NOT EXISTS idx_fact_sources_generation ON fact_check_sources(generation_id);
+CREATE INDEX IF NOT EXISTS idx_fact_sources_confidence ON fact_check_sources(confidence_score DESC);
 
 -- Table pour les comparaisons de variantes
 CREATE TABLE IF NOT EXISTS variant_comparisons (
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS variant_comparisons (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_comparisons_user ON variant_comparisons(user_id);
+CREATE INDEX IF NOT EXISTS idx_comparisons_user ON variant_comparisons(user_id);
 
 -- Commentaires pour documentation
 COMMENT ON TABLE predictions_analytics IS 'Stocke les analyses prédictives de performance des posts LinkedIn';

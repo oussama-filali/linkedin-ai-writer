@@ -2,12 +2,23 @@
   "expo": {
     "name": "linkedin-ai-writer-mobile",
     "slug": "linkedin-ai-writer-mobile",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "linkedinaiwritermobile",
+    "version": "1.0.0",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "router": {
+        "origin": "https://linkia.app"
+      },
+      "auth": {
+        "googleClientId": "815520199654-447m2maiqc9c3boodtpaoqigga79vksj.apps.googleusercontent.com"
+      },
+      "apiBaseUrl": "http://localhost:3000/api",
+      "supabase": {
+        "url": "https://chkzyzcclkfyagkipnvg.supabase.co",
+        "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoa3p5emNjbGtmeWFna2lwbnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMzMzNzQsImV4cCI6MjA3ODYwOTM3NH0.KjbUE-khVaJMzj4jx6vuw9zgm1GSZB_SMMDvGJbji-s"
+      }
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -19,7 +30,19 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "linkedinaiwritermobile",
+              "host": "*"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "output": "static",
@@ -41,7 +64,7 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
+      "typedRoutes": false,
       "reactCompiler": true
     }
   }

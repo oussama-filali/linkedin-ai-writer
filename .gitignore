@@ -34,8 +34,14 @@ LANCEMENT.txt
 debug.log
 
 # ═══════════════════════════════════════════════════════════
-# DOCUMENTATION INTERNE (NE PAS PARTAGER - Dans /docs maintenant)
+# DOCUMENTATION INTERNE (NE PAS PARTAGER - Données sensibles)
 # ═══════════════════════════════════════════════════════════
+
+# Ignorer TOUT le dossier docs (contient données sensibles)
+docs/
+
+# Sauf le README public
+!docs/README.md
 
 CORRECTIFS.md
 TESTING.md
@@ -43,6 +49,7 @@ DATABASE.md
 START.md
 MISSION.md
 GIT_SETUP.md
+RESOLU.md
 
 # ═══════════════════════════════════════════════════════════
 # LOGS ET TEMPORAIRES

@@ -20,10 +20,38 @@ export default function TabLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <IconSymbol size={28} name="house.fill" color={color} />
+          ),
         }}
       />
-      {/* Onglet Explore supprimé car le fichier n'existe plus */}
+      <Tabs.Screen
+        name="generate"
+        options={{
+          title: 'Generate',
+          tabBarIcon: ({ color }: { color: string }) => (
+            <IconSymbol size={26} name="rectangle.and.pencil.and.ellipsis" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color }: { color: string }) => (
+            <IconSymbol size={26} name="clock.arrow.circlepath" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }: { color: string }) => (
+            <IconSymbol size={26} name="gearshape.fill" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

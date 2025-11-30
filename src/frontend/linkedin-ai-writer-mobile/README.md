@@ -1,50 +1,87 @@
-# Welcome to your Expo app 👋
+# LinkedIn AI Writer – Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application Expo/React Native pensée **mobile-first** pour piloter LinkedIn AI Writer : génération de posts, planification, notifications et animations 3D inspirées du dashboard web.
 
-## Get started
+## 1. Démarrage rapide
 
-1. Install dependencies
+```bash
+cd src/frontend/linkedin-ai-writer-mobile
+npm install
+npm start
+```
 
-   ```bash
-   npm install
-   ```
+Depuis le menu Expo :
 
-2. Start the app
+- `a` → Android Emulator
+- `i` → iOS Simulator
+- Scanner le QR code dans Expo Go
 
-   ```bash
-   npx expo start
-   ```
+Assure-toi que le backend est lancé (`node start-dev.js`) afin que les appels API /health répondent.
 
-In the output, you'll find options to open the app in a
+## 2. Structure principale
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+```
+app/                # Routage Expo Router + écrans (Home, Auth, Planning...)
+components/         # UI réutilisable (buttons, cards)
+hooks/              # Hooks (auth, notifications)
+constants/          # Thèmes, couleurs, tokens
+scripts/            # Utilitaires (reset, lint)
+assets/             # Fonts, illustrations, Lottie
+TESTING.md          # Plan de tests simple & avancé (entrée → sortie)
+```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 3. Fonctionnalités prévues & statut
 
-## Get a fresh project
+| Feature | Statut | Notes |
+|---------|--------|-------|
+| Home / Onboarding | ✅ Prototype | Texte d’accueil prêt, responsive |
+| Auth LinkedIn (OAuth) | 🛠️ À faire | Utilisera `expo-auth-session` + backend callback |
+| Génération de posts | 🛠️ À faire | Formulaire → POST `/api/posts/generate` |
+| Scheduling & notifications | 🛠️ À faire | UI calendrier + Expo Push + backend Agenda |
+| Animation 3D background | 🛠️ À faire | `expo-three` / `@react-three/fiber` |
 
-When you're ready, run:
+## 4. Tests (entrée → sortie)
+
+Chaque feature doit être testée avec un **scénario simple** (happy path) et un **scénario avancé** (erreurs, offline, multi-device). Consulte `TESTING.md` pour la table complète.
+
+Exemple rapide :
+
+```text
+Feature : Génération
+1. Saisir résumé + objectif + ton
+2. Taper « Générer » → POST /api/posts/generate
+3. Afficher la preview + sauvegarder en local
+4. Cas avancé : timeout backend → message + retry
+```
+
+## 5. Animations & motion
+
+- `@react-three/fiber` + `expo-gl` pour la scène 3D
+- `react-native-reanimated` + `react-native-gesture-handler` pour les transitions
+- Pensé pour réduire l’intensité si « Low Power Mode » est activé
+
+## 6. Notifications & scheduling
+
+1. Permissions via `expo-notifications`
+2. Backend planifie via Agenda/BullMQ
+3. L’app affiche une notification « prêt à publier ? » avant l’heure idéale
+
+## 7. Qualité & scripts
+
+```bash
+npm run lint         # ESLint + Expo lint rules
+# (Prochainement) npm test      # Jest + RTL
+# (Prochainement) npm run test:e2e  # Detox
+```
+
+Avant chaque merge : lancer les scénarios décrits dans `TESTING.md` et capturer les résultats (Notion / docs).
+
+---
+
+Besoin d’un environnement propre ?
 
 ```bash
 npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Ensuite réimporte les composants utiles depuis `app-example/` si nécessaire.

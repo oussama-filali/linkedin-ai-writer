@@ -150,6 +150,29 @@ class PostController {
     }
 
     /**
+     * Récupère le détail d'un post par ID
+     */
+    async getPostById(req, res) {
+        try {
+            const { id } = req.params;
+            const numericId = parseInt(id, 10);
+            if (Number.isNaN(numericId)) {
+                return res.status(400).json({ success: false, error: 'ID invalide' });
+            }
+
+            const result = await db.query('SELECT * FROM generations_history WHERE id = $1', [numericId]);
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, error: 'Post introuvable' });
+            }
+
+            res.json({ success: true, data: result.rows[0] });
+        } catch (error) {
+            console.error('Erreur getPostById:', error.message);
+            res.status(500).json({ success: false, error: 'Impossible de récupérer le post' });
+        }
+    }
+
+    /**
      * Vérifie le fact-checking d'un contenu personnalisé
      */
     async checkContent(req, res) {

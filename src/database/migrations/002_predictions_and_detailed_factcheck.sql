@@ -16,6 +16,15 @@ CREATE TABLE IF NOT EXISTS predictions_analytics (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE predictions_analytics
+    ADD COLUMN IF NOT EXISTS generation_id INTEGER REFERENCES generations_history(id) ON DELETE CASCADE,
+    ADD COLUMN IF NOT EXISTS engagement_score INTEGER CHECK (engagement_score BETWEEN 0 AND 100),
+    ADD COLUMN IF NOT EXISTS virality_potential VARCHAR(20) CHECK (virality_potential IN ('faible', 'moyen', 'élevé', 'viral')),
+    ADD COLUMN IF NOT EXISTS optimal_posting_time JSONB,
+    ADD COLUMN IF NOT EXISTS recommendations JSONB DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS filter_score INTEGER,
+    ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
 -- Table détaillée des fact-checks
 CREATE TABLE IF NOT EXISTS fact_checks_detailed (
     id SERIAL PRIMARY KEY,
