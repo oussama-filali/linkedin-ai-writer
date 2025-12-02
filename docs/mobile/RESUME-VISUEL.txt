@@ -44,7 +44,7 @@
 │     👉 Ouvre ACTION-SUPABASE.md et suis les étapes         │
 │                                                             │
 │  2️⃣  Lance l'application                                   │
-│     cd "C:\...\linkedin-ai-writer-mobile"                   │
+│     cd "C:\\...\\linkedin-ai-writer-mobile"                   │
 │     npm start                                               │
 │                                                             │
 │  3️⃣  Teste l'inscription                                   │
@@ -177,7 +177,7 @@
   Configuration avancée Supabase:
     - Email templates personnalisés
     - OAuth providers (Google, GitHub, etc.)
-    - Row Level Security (RLS)
+    - RLS
     - Edge Functions
 
   Backend API (si nécessaire):
@@ -202,31 +202,3 @@
 
   Ouvre ACTION-SUPABASE.md et suis les étapes.
   En 5 minutes, ton authentification sera fonctionnelle.
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  📝 Note: Les fichiers services/auth-service.ts contiennent
-     encore syncSupabaseSession(), revokeSession(), etc.
-     
-     Ces fonctions sont marquées DEPRECATED mais conservées
-     au cas où ton backend les utilise pour d'autres features.
-     
-     Si tu ne les utilises pas, tu peux les supprimer.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-
-💬 BESOIN D'AIDE ?
-
-  1. Lis ACTION-SUPABASE.md
-  2. Lis EXPLICATIONS-SIMPLE.md
-  3. Lis SUPABASE-SETUP.md
-  4. Demande sur le Discord/Slack de ton équipe
-
-
-═══════════════════════════════════════════════════════════════
-
-         🎉 BONNE CHANCE AVEC TON APP ! 🎉
-
-═══════════════════════════════════════════════════════════════

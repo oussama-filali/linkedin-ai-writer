@@ -14,7 +14,10 @@ interface RequestOptions {
 
 function getBaseUrl() {
   const extra = (Constants as any).manifest?.extra;
-  const configured = (extra?.apiBaseUrl as string | undefined) ?? process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_BASE_URL;
+  const configured =
+    (extra?.apiBaseUrl as string | undefined) ??
+    process.env.EXPO_PUBLIC_API_BASE_URL ??
+    DEFAULT_BASE_URL;
   return configured.replace(/\/$/, '');
 }
 

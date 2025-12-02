@@ -96,7 +96,7 @@ Les services suivants peuvent être **supprimés** ou gardés pour d'autres feat
 ## Test
 
 ```bash
-cd "C:\wamp64\www\projet Perso\linkedin-ai-writer\src\frontend\linkedin-ai-writer-mobile"
+cd "C:\\wamp64\\www\\projet Perso\\linkedin-ai-writer\\src\\frontend\\linkedin-ai-writer-mobile"
 npm start
 ```
 
@@ -107,6 +107,6 @@ npm start
 
 ## Notes importantes
 
-- Le `token` retourné est le **access_token Supabase**
+- Le `token` retourné est le **Supabase access_token**
 - Si tu dois appeler ton backend, utilise ce token dans l'header `Authorization: Bearer {token}`
 - Ton backend doit vérifier le token avec Supabase JWT verification

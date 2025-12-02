@@ -112,7 +112,7 @@ CREATE TRIGGER on_auth_user_created
 
 ### Test 1 : Connexion à Supabase
 ```bash
-cd "C:\wamp64\www\projet Perso\linkedin-ai-writer\src\frontend\linkedin-ai-writer-mobile"
+cd "C:\\wamp64\\www\\projet Perso\\linkedin-ai-writer\\src\\frontend\\linkedin-ai-writer-mobile"
 npm start
 ```
 

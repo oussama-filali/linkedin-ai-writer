@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import * as Linking from 'expo-linking';
 
@@ -51,7 +51,8 @@ async function clearStoredSession() {
   await storage.remove(REFRESH_TOKEN_KEY);
 }
 
-export function useAuth() {
+// Internal hook implementing the auth logic. Used by the provider only.
+function useProvideAuth() {
   const [state, setState] = useState<AuthState>({
     checkingSession: true,
     authenticating: false,
@@ -253,4 +254,21 @@ export function useAuth() {
     refresh: hydrateFromStorage,
     refreshProfile,
   };
+}
+
+type AuthContextValue = ReturnType<typeof useProvideAuth>;
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const value = useProvideAuth();
+  return React.createElement(AuthContext.Provider, { value }, children as any);
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within <AuthProvider>');
+  }
+  return ctx;
 }

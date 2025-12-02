@@ -1,13 +1,30 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+
+import { useAuth } from '@/hooks/use-auth';
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { isAuthenticated, checkingSession } = useAuth();
+
+  useEffect(() => {
+    if (!checkingSession) {
+      if (isAuthenticated) {
+        router.replace('/(tabs)/home' as never);
+      } else {
+        router.replace('/login' as never);
+      }
+    }
+  }, [checkingSession, isAuthenticated, router]);
+
   return (
     <SafeAreaView style={styles.container}>
-      <View>
-        <Text style={styles.title}>Bienvenue sur LinkedIn AI Writer Mobile</Text>
-        <Text style={styles.subtitle}>Génère, planifie et publie tes posts LinkedIn avec l’IA ✨</Text>
+      <View style={styles.content}>
+        <ActivityIndicator size="large" color="#0077b5" style={styles.loader} />
+        <Text style={styles.title}>LinkedIn AI Writer Mobile</Text>
+        <Text style={styles.subtitle}>Chargement...</Text>
       </View>
     </SafeAreaView>
   );
@@ -20,16 +37,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f5f6fa',
   },
+  content: {
+    alignItems: 'center',
+  },
+  loader: {
+    marginBottom: 16,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#0077b5',
-    marginBottom: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#333',
+    color: '#666',
     textAlign: 'center',
   },
 });
