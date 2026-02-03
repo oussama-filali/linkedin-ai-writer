@@ -8,18 +8,19 @@ class PostController {
      */
     async generatePost(req, res) {
         try {
-            const { resume, objectif, ton, sujet, userId } = req.body;
+            const { resume, objectif, ton, sujet, userId, profile } = req.body;
 
-            // Validation
-            if (!resume || !objectif || !ton) {
+            // Validation : on accepte soit un profil structuré, soit un simple résumé texte
+            if ((!profile && !resume) || !objectif || !ton) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Données manquantes : resume, objectif et ton sont requis'
+                    error: 'Données manquantes : profil/résumé, objectif et ton sont requis'
                 });
             }
 
             // Générer le post
             const generatedPost = await aiService.generateLinkedInPost({
+                profile,
                 resume,
                 objectif,
                 ton,

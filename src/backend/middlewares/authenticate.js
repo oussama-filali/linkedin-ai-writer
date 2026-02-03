@@ -6,7 +6,11 @@ const {
   upsertSupabaseUser,
 } = require('../services/auth-service');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-prod';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (process.env.NODE_ENV === 'production' && !JWT_SECRET) {
+  throw new Error('JWT_SECRET manquant en production');
+}
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'change-me-in-prod';
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
 async function fetchUserById(userId) {
@@ -67,7 +71,7 @@ module.exports = async function authenticate(req, res, next) {
     }
 
     try {
-      const payload = jwt.verify(token, JWT_SECRET);
+      const payload = jwt.verify(token, EFFECTIVE_JWT_SECRET);
       const user = await fetchUserById(payload.sub);
 
       if (!user) {

@@ -10,7 +10,7 @@ class AIService {
     /**
      * Génère un post LinkedIn basé sur les inputs utilisateur
      * @param {Object} data - Données de l'utilisateur
-     * @param {string} data.resume - Résumé LinkedIn de l'utilisateur
+     * @param {Object|string} data.profile - Profil structuré anonymisé OU ancien champ "resume" texte
      * @param {string} data.objectif - Objectif du post
      * @param {string} data.ton - Ton souhaité (professionnel, inspirant, engagé)
      * @param {string} data.sujet - Sujet du post (optionnel)
@@ -18,16 +18,18 @@ class AIService {
      * @returns {Promise<string>} Le post généré
      */
     async generateLinkedInPost(data) {
-        const { resume, objectif, ton, sujet = '', enableFactCheck = true } = data;
+        const { profile, resume, objectif, ton, sujet = '', enableFactCheck = true } = data;
 
-        // Validation
-        if (!resume || !objectif || !ton) {
-            throw new Error('Données manquantes : resume, objectif et ton sont requis');
+        const baseContext = profile ?? resume;
+
+        // Validation minimale : on exige au moins un contexte (profil ou résumé), un objectif et un ton
+        if (!baseContext || !objectif || !ton) {
+            throw new Error('Données manquantes : profil/résumé, objectif et ton sont requis');
         }
 
         // Construction du prompt avec engineering avancé
         const systemPrompt = promptTemplates.getSystemPrompt(ton);
-        const userPrompt = promptTemplates.getUserPrompt(resume, objectif, sujet);
+        const userPrompt = promptTemplates.getUserPrompt(baseContext, objectif, sujet);
 
         let attempt = 0;
         let lastError;

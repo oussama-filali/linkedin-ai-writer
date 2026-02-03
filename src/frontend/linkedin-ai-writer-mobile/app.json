@@ -2,6 +2,7 @@
   "expo": {
     "name": "linkedin-ai-writer-mobile",
     "slug": "linkedin-ai-writer-mobile",
+    "owner": "oussama-1357",
     "scheme": "linkedinaiwritermobile",
     "version": "1.0.0",
     "userInterfaceStyle": "automatic",
@@ -13,7 +14,6 @@
       "auth": {
         "googleClientId": "815520199654-447m2maiqc9c3boodtpaoqigga79vksj.apps.googleusercontent.com"
       },
-      "apiBaseUrl": "http://172.20.10.3:3000/api",
       "supabase": {
         "url": "https://chkzyzcclkfyagkipnvg.supabase.co",
         "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoa3p5emNjbGtmeWFna2lwbnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMzMzNzQsImV4cCI6MjA3ODYwOTM3NH0.KjbUE-khVaJMzj4jx6vuw9zgm1GSZB_SMMDvGJbji-s"
@@ -40,7 +40,10 @@
               "host": "*"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -61,7 +64,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": false,

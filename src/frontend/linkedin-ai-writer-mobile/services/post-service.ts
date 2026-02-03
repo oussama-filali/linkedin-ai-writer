@@ -25,12 +25,47 @@ export interface FactCheckResult {
   [key: string]: unknown;
 }
 
+export interface ProfileSummary {
+  /**
+   * Type de profil anonymisé (étudiant, freelance, salarié, manager, reconversion, etc.)
+   */
+  role?: string;
+  /**
+   * Secteur ou domaine principal (sans nom d'entreprise spécifique)
+   */
+  sector?: string;
+  /**
+   * Niveau d'expérience approximatif (débutant, intermédiaire, confirmé...)
+   */
+  experienceLevel?: string;
+  /**
+   * Type d'audience principale (pairs, clients potentiels, recruteurs, etc.)
+   */
+  targetAudience?: string;
+  /**
+   * Préférences de style (sobre, direct, chaleureux, etc.)
+   */
+  preferredStyle?: string;
+  /**
+   * Résumé libre du contexte / parcours (texte saisi dans l'app)
+   */
+  summary?: string;
+}
+
 export interface GeneratePostPayload {
+  /**
+   * Ancien champ, toujours supporté : résumé libre saisi par l'utilisateur.
+   * Si un profile est fourni, c'est profile.summary qui sera utilisé en priorité.
+   */
   resume: string;
   objectif: string;
   ton: string;
   sujet?: string;
   userId?: string;
+  /**
+   * Profil structuré anonymisé envoyé à l'IA (RGPD-friendly).
+   */
+  profile?: ProfileSummary;
   meta?: {
     audience?: string;
     sector?: string;
@@ -118,6 +153,7 @@ export async function generatePost(payload: GeneratePostPayload, token?: string 
     ton: payload.ton,
     sujet: payload.sujet,
     userId: payload.userId,
+    profile: payload.profile,
   };
 
   const response = await request<GeneratePostApiResponse>('/posts/generate', {

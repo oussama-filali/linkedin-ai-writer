@@ -118,6 +118,70 @@ function useProvideAuth() {
     hydrateFromStorage();
   }, [hydrateFromStorage]);
 
+  const handleDeepLink = useCallback(
+    async (url: string | null) => {
+      if (!url) return;
+
+      try {
+        const hasAccessToken = url.includes('access_token=');
+        const hasRefreshToken = url.includes('refresh_token=');
+
+        if (!hasAccessToken) {
+          return;
+        }
+
+        const separatorIndex = url.indexOf('#');
+        const queryString =
+          separatorIndex >= 0 ? url.substring(separatorIndex + 1) : url.split('?')[1] ?? '';
+        const params = new URLSearchParams(queryString);
+
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (!accessToken || !refreshToken) {
+          return;
+        }
+
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError || !data.session || !data.user) {
+          throw sessionError ?? new Error('Session Supabase invalide (deep link).');
+        }
+
+        await persistSessionTokens(data.session.access_token, data.session.refresh_token);
+        await applySession(data.session.access_token, data.user);
+      } catch (err) {
+        console.warn('Impossible de traiter le deep link Supabase', err);
+      }
+    },
+    [applySession]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const urlListener = ({ url }: { url: string }) => {
+      if (!isMounted) return;
+      handleDeepLink(url);
+    };
+
+    const subscription = Linking.addEventListener('url', urlListener);
+
+    (async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (!isMounted) return;
+      await handleDeepLink(initialUrl);
+    })();
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, [handleDeepLink]);
+
   useEffect(() => {
     type AuthListener = Parameters<typeof supabase.auth.onAuthStateChange>[0];
     type AuthEvent = Parameters<AuthListener>[0];
@@ -128,6 +192,14 @@ function useProvideAuth() {
         persistSessionTokens(session.access_token, session.refresh_token).catch((err) =>
           console.warn('Impossible de persister la session Supabase', err)
         );
+
+        if ((session as any).user) {
+          applySession(session.access_token, (session as any).user).catch((err) =>
+            console.warn("Impossible d'appliquer la session Supabase", err)
+          );
+          return;
+        }
+
         setState((prev) => ({ ...prev, token: session.access_token }));
       }
 

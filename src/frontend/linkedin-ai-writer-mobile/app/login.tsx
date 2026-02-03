@@ -11,8 +11,29 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 
 import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/services/supabase-client';
+
+WebBrowser.maybeCompleteAuthSession();
+
+function urlHasAuthCode(url: string) {
+  return url.includes('code=');
+}
+
+function getExpoProjectFullName() {
+  const expoConfig = Constants.expoConfig ?? (Constants as any).manifest;
+  const originalFullName = expoConfig?.originalFullName as string | undefined;
+  if (originalFullName) return originalFullName;
+
+  const owner = expoConfig?.owner as string | undefined;
+  const slug = expoConfig?.slug as string | undefined;
+  if (owner && slug) return `@${owner}/${slug}`;
+
+  return null;
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -51,6 +72,66 @@ export default function LoginScreen() {
     }
   };
 
+  const buildRedirectUrl = () => {
+    // Web: on garde une URL HTTP(S) de notre app web.
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return `${window.location.origin}/auth/callback`;
+    }
+
+    // Expo Go: LinkedIn n'accepte pas exp://, on passe donc par le proxy Expo (HTTPS).
+    // Le proxy a besoin du project full name: @owner/slug.
+    const projectFullName = getExpoProjectFullName();
+    if (!projectFullName) {
+      throw new Error(
+        "Projet Expo non identifié. Ajoute 'owner' dans app.json (Expo account username) ou passe projectNameForProxy." 
+      );
+    }
+    return `https://auth.expo.io/${projectFullName}/auth/callback`;
+  };
+
+  const handleLinkedInLogin = async () => {
+    try {
+      const redirectUrl = buildRedirectUrl();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'linkedin_oidc',
+        options: {
+          redirectTo: redirectUrl,
+          // Sur mobile natif, on gère nous-même l'ouverture du navigateur.
+          skipBrowserRedirect: Platform.OS !== 'web',
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Redirection vers LinkedIn pour OAuth', data?.url);
+
+      // Sur le web, Supabase effectue une redirection complète.
+      if (Platform.OS === 'web') {
+        return;
+      }
+
+      if (data?.url) {
+        // Ouvre la session OAuth et attend le retour vers redirectUrl.
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+        if (result.type === 'success' && result.url) {
+          // Supabase OAuth renvoie généralement un "code" (PKCE) -> on échange contre une session.
+          if (urlHasAuthCode(result.url)) {
+            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.url);
+            if (exchangeError) {
+              throw exchangeError;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Connexion LinkedIn impossible pour le moment.';
+      Alert.alert('Connexion LinkedIn', message);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -59,7 +140,7 @@ export default function LoginScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>{mode === 'login' ? 'Connexion' : 'Créer un compte'}</Text>
         <Text style={styles.subtitle}>
-          Authentifie-toi avec ton compte Supabase pour accéder au studio LinkedIn AI.
+          Authentifie-toi avec ton LinkedIn pour accéder au studio LinkIA_Writer.
         </Text>
         <TextInput
           style={styles.input}
@@ -71,7 +152,14 @@ export default function LoginScreen() {
           onChangeText={setEmail}
         />
         <TextInput
-          style={styles.input}
+                  onPress={() => {
+                    // Évite l'erreur "GO_BACK" quand aucun écran précédent n'existe
+                    if ((router as any).canGoBack?.()) {
+                      router.back();
+                    } else {
+                      router.replace('/(tabs)/home');
+                    }
+                  }}
           secureTextEntry
           placeholder="Mot de passe Super Secret"
           value={password}
@@ -98,6 +186,19 @@ export default function LoginScreen() {
           <Text style={styles.linkText}>
             {mode === 'login' ? "Pas de compte ? Inscription" : 'Déjà un compte ? Connexion'}
           </Text>
+        </Pressable>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.divider} />
+          <Text style={styles.dividerText}>ou</Text>
+          <View style={styles.divider} />
+        </View>
+
+        <Pressable
+          onPress={handleLinkedInLogin}
+          style={({ pressed }) => [styles.oauthButton, pressed && { opacity: 0.9 }]}
+          disabled={authenticating}>
+          <Text style={styles.oauthText}>Continuer avec LinkedIn</Text>
         </Pressable>
 
         <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}>
@@ -161,6 +262,34 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#0a7ea4',
     fontWeight: '600',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(148,163,184,0.6)',
+  },
+  dividerText: {
+    color: '#6b7280',
+    fontSize: 12,
+  },
+  oauthButton: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(10,126,164,0.5)',
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  oauthText: {
+    color: '#0a7ea4',
+    fontWeight: '600',
+    fontSize: 15,
   },
   backButton: {
     alignItems: 'center',

@@ -12,13 +12,51 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
+function getDevBaseUrlFromExpo(): string | null {
+  try {
+    const anyConstants = Constants as any;
+    const expoConfig = anyConstants.expoConfig ?? anyConstants.manifest ?? {};
+    const extra = expoConfig.extra ?? {};
+
+    // Si une URL est configurée explicitement dans extra, on la respecte
+    if (typeof extra.apiBaseUrl === 'string' && extra.apiBaseUrl.length > 0) {
+      return (extra.apiBaseUrl as string).replace(/\/$/, '');
+    }
+
+    // Sinon, on dérive automatiquement depuis l'URL du dev server Expo
+    const hostUri: string | undefined = expoConfig.hostUri ?? expoConfig.debuggerHost;
+    if (!hostUri) return null;
+
+    const host = hostUri.split(':')[0];
+    if (!host) return null;
+
+    // Backend HTTP sur le même host, port 3000
+    return `http://${host}:3000/api`;
+  } catch {
+    return null;
+  }
+}
+
 function getBaseUrl() {
-  const extra = (Constants as any).manifest?.extra;
+  const anyConstants = Constants as any;
+  const manifestExtra = anyConstants.manifest?.extra;
+  const expoExtra = anyConstants.expoConfig?.extra;
+
   const configured =
-    (extra?.apiBaseUrl as string | undefined) ??
-    process.env.EXPO_PUBLIC_API_BASE_URL ??
-    DEFAULT_BASE_URL;
-  return configured.replace(/\/$/, '');
+    (manifestExtra?.apiBaseUrl as string | undefined) ??
+    (expoExtra?.apiBaseUrl as string | undefined) ??
+    (process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined);
+
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+
+  const devAuto = getDevBaseUrlFromExpo();
+  if (devAuto) {
+    return devAuto;
+  }
+
+  return DEFAULT_BASE_URL.replace(/\/$/, '');
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {

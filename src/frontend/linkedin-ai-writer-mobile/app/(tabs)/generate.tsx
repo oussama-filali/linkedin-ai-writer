@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { usePostDraftStore } from '@/stores/post-draft-store';
-import { GeneratePostPayload, generatePost } from '@/services/post-service';
+import { GeneratePostPayload, ProfileSummary, generatePost } from '@/services/post-service';
 
 const tones = ['professionnel', 'inspirant', 'engagé'];
 const sectors = ['Tech & SaaS', 'Marketing', 'Finance', 'RH', 'Industrie'];
@@ -34,7 +34,7 @@ const buildFallbackSlots = (): LocalSlot[] => {
 
 export default function GenerateScreen() {
   const fallbackSlots = useMemo(() => buildFallbackSlots(), []);
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
   const setDraft = usePostDraftStore((state) => state.setDraft);
 
   const [resume, setResume] = useState('');
@@ -71,11 +71,21 @@ export default function GenerateScreen() {
       return;
     }
 
+    const profile: ProfileSummary = {
+      // Description volontairement générique pour rester RGPD-friendly
+      role: 'utilisateur LinkedIn',
+      sector,
+      targetAudience: audience.trim() || undefined,
+      preferredStyle: tone,
+      summary: resume.trim(),
+    };
+
     const payload: GeneratePostPayload = {
       resume: resume.trim(),
       objectif: objective.trim(),
       ton: tone,
       sujet: `${sector} • ${domain} • ${audience}`,
+      profile,
       meta: {
         audience: audience.trim(),
         sector,

@@ -3,7 +3,11 @@ const jwt = require('jsonwebtoken');
 const db = require('../../config/database');
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-prod';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (process.env.NODE_ENV === 'production' && !JWT_SECRET) {
+  throw new Error('JWT_SECRET manquant en production');
+}
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'change-me-in-prod';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
@@ -182,7 +186,7 @@ function createJwt(user) {
       name: user.name,
       provider: 'google',
     },
-    JWT_SECRET,
+    EFFECTIVE_JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
 }
