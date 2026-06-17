@@ -1,6 +1,31 @@
 const axios = require('axios');
 const openai = require('../../config/openai');
-const promptTemplates = require('../prompts/linkedin-prompts');
+
+/**
+ * Prompt d'analyse fact-checking (auparavant dans linkedin-prompts.js).
+ * Demande au modèle de repérer les affirmations vérifiables en JSON.
+ */
+function getFactCheckPrompt(content) {
+    return `Analyse ce contenu et repère les affirmations qui pourraient nécessiter une vérification :
+
+${content}
+
+Pour chaque affirmation douteuse ou vérifiable, note l'affirmation elle-même, la raison pour laquelle elle pourrait être problématique, ton niveau de confiance dans sa véracité, et sa catégorie.
+
+Réponds uniquement en JSON avec cette structure :
+{
+    "claims": [
+        {
+            "text": "l'affirmation concernée",
+            "reason": "pourquoi cela mérite vérification",
+            "confidence": "faible|moyen|élevé",
+            "category": "statistique|fait historique|étude|autre"
+        }
+    ],
+    "needsVerification": true/false,
+    "riskLevel": "faible|moyen|élevé"
+}`;
+}
 
 /**
  * Service avancé de fact-checking multi-sources
@@ -28,7 +53,7 @@ class FactCheckingService {
      */
     async analyzeContent(content) {
         try {
-            const prompt = promptTemplates.getFactCheckPrompt(content);
+            const prompt = getFactCheckPrompt(content);
             
             const response = await openai.chat.completions.create({
                 model: 'gpt-3.5-turbo',
@@ -115,14 +140,23 @@ class FactCheckingService {
      */
     async verifyClaimWithWikidata(claim) {
         try {
+            // On cherche l'ENTITÉ nommée (ex: "Ibn Khaldoun"), pas la phrase entière.
+            // Une recherche sur la phrase complète renvoie toujours noResults.
+            const searchTerm = this._extractEntity(claim.text) || claim.text;
+
             // Recherche d'entités correspondantes
             const searchResponse = await axios.get(this.wikidataApiUrl, {
                 params: {
                     action: 'wbsearchentities',
-                    search: claim.text,
+                    search: searchTerm,
                     language: 'fr',
                     format: 'json',
                     limit: 3
+                },
+                headers: {
+                    // Wikidata exige un User-Agent explicite, sinon 403 Forbidden.
+                    'User-Agent': 'LinkedInAIWriter/1.0 (fact-checking; contact: support@linkedin-ai-writer.app)',
+                    'Accept': 'application/json'
                 },
                 timeout: 5000
             });
@@ -149,6 +183,23 @@ class FactCheckingService {
         }
 
         return claim;
+    }
+
+    /**
+     * Extrait l'entité nommée la plus probable d'une affirmation : la plus longue
+     * séquence de mots commençant par une majuscule (ex: "Ibn Khaldoun", "Marie Curie").
+     * Permet une recherche Wikidata ciblée au lieu de la phrase entière.
+     * @private
+     * @param {string} text
+     * @returns {string|null}
+     */
+    _extractEntity(text) {
+        if (!text) return null;
+        // Séquences de mots capitalisés (gère accents et particules courtes type "de", "ibn")
+        const matches = text.match(/\b([A-ZÀ-Ý][\wÀ-ÿ'-]+(?:\s+(?:de|du|d'|von|van|ibn|al|el)?\s*[A-ZÀ-Ý][\wÀ-ÿ'-]+)*)/g);
+        if (!matches || matches.length === 0) return null;
+        // On retient la plus longue (souvent le nom propre complet)
+        return matches.sort((a, b) => b.length - a.length)[0].trim();
     }
 
     /**

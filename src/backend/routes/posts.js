@@ -4,6 +4,13 @@ const postController = require('../controllers/post-controller');
 const validateRequest = require('../middlewares/validate-request');
 
 /**
+ * @route   GET /api/posts/types
+ * @desc    Liste les types de post disponibles (entonnoir)
+ * @access  Public
+ */
+router.get('/types', postController.getTypes);
+
+/**
  * @route   POST /api/posts/generate
  * @desc    Génère un nouveau post LinkedIn
  * @access  Public (ajouter auth middleware plus tard)

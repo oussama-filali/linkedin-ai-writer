@@ -1,4 +1,7 @@
 const { body, validationResult } = require('express-validator');
+const { isValidType, STRATEGIES } = require('../../ia/strategies/strategy-registry');
+
+const VALID_TYPES = Object.keys(STRATEGIES);
 
 /**
  * Middleware de validation générique
@@ -21,22 +24,32 @@ const validate = (req, res, next) => {
  * Validation pour la génération de post
  */
 const generatePost = [
+    // type de post (entonnoir). Optionnel pour rétrocompat : fallback storytelling.
+    body('type')
+        .optional()
+        .trim()
+        .custom((v) => isValidType(v)).withMessage(`Type invalide. Attendu : ${VALID_TYPES.join(', ')}`),
     body('resume')
         .trim()
         .notEmpty().withMessage('Le résumé est requis')
-        .isLength({ min: 50, max: 5000 }).withMessage('Le résumé doit contenir entre 50 et 5000 caractères'),
+        .isLength({ min: 20, max: 5000 }).withMessage('Le résumé doit contenir entre 20 et 5000 caractères'),
     body('objectif')
         .trim()
         .notEmpty().withMessage('L\'objectif est requis')
         .isLength({ max: 500 }).withMessage('L\'objectif ne peut dépasser 500 caractères'),
     body('ton')
+        .optional()
         .trim()
-        .notEmpty().withMessage('Le ton est requis')
         .isIn(['professionnel', 'inspirant', 'engagé']).withMessage('Ton invalide'),
     body('sujet')
         .optional()
         .trim()
         .isLength({ max: 500 }).withMessage('Le sujet ne peut dépasser 500 caractères'),
+    // commentaire à répondre (type reponse_commentaire)
+    body('comment')
+        .optional()
+        .trim()
+        .isLength({ max: 2000 }).withMessage('Le commentaire ne peut dépasser 2000 caractères'),
     validate
 ];
 

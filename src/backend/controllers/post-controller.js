@@ -1,49 +1,111 @@
-const aiService = require('../../ia/ai-service');
+const generationCore = require('../../ia/generation-core');
 const factChecker = require('../../ia/fact-checking/fact-checker');
+const { getStrategy, DEFAULT_TYPE, listTypes } = require('../../ia/strategies/strategy-registry');
+const { extractSources, hasUnsourcedClaims } = require('../../ia/fact-checking/source-extractor');
+const rag = require('../../ia/rag/rag-service');
 const db = require('../../config/database');
 
+// L'user_id en base est un INTEGER. On coerce proprement (null si invalide).
+function toUserId(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const n = parseInt(value, 10);
+    return Number.isInteger(n) ? n : null;
+}
+
 class PostController {
+    /**
+     * Liste les types de post disponibles (pour le sélecteur frontend)
+     */
+    async getTypes(req, res) {
+        res.json({ success: true, data: listTypes() });
+    }
+
     /**
      * Génère un nouveau post LinkedIn
      */
     async generatePost(req, res) {
         try {
-            const { resume, objectif, ton, sujet, userId, profile } = req.body;
+            const { resume, objectif, ton, sujet, profile, comment } = req.body;
+            const type = req.body.type || DEFAULT_TYPE;
+            // user_id : priorité à l'utilisateur authentifié (req.user), sinon body.
+            const userId = toUserId((req.user && req.user.id) || req.body.userId);
 
-            // Validation : on accepte soit un profil structuré, soit un simple résumé texte
-            if ((!profile && !resume) || !objectif || !ton) {
+            // On accepte soit un profil structuré, soit un simple résumé texte.
+            if ((!profile && !resume) || !objectif) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Données manquantes : profil/résumé, objectif et ton sont requis'
+                    error: 'Données manquantes : profil/résumé et objectif sont requis'
                 });
             }
 
-            // Générer le post
-            const generatedPost = await aiService.generateLinkedInPost({
-                profile,
-                resume,
-                objectif,
-                ton,
-                sujet
-            });
+            const strategy = getStrategy(type);
 
-            // Fact-checking automatique
+            // Brief = fusion objectif + sujet (le profil porte le "qui parle").
+            const brief = [objectif, sujet].filter(Boolean).join('. ');
+
+            // 1) NOYAU : génère via l'entonnoir. userId => mémoire perso (personnalisation).
+            const generation = await generationCore.generate({
+                type,
+                brief,
+                profile: profile || resume,
+                comment,
+                userId,
+            });
+            const generatedPost = generation.post;
+
+            // 2) FACT-CHECK obligatoire (analyse locale + web si claims factuelles).
             const factCheckResult = await factChecker.verifySafeToPublish(generatedPost);
 
-            // Sauvegarder dans la base de données
+            // 3) SOURCES réelles extraites du fact-check (URLs Google/Wikidata).
+            const sources = extractSources(factCheckResult);
+            const unsourced = hasUnsourcedClaims(factCheckResult);
+
+            // 4) Sauvegarde + transparence AI Act (is_ai_generated = true).
             const result = await db.query(
-                `INSERT INTO generations_history 
-                (user_id, resume, objectif, ton, sujet, generated_post, fact_check_result, is_safe) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                `INSERT INTO generations_history
+                (user_id, resume, objectif, ton, sujet, generated_post, fact_check_result, is_safe, post_type, is_ai_generated, sources)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10)
                 RETURNING id, created_at`,
-                [userId || null, resume, objectif, ton, sujet || null, generatedPost, JSON.stringify(factCheckResult), factCheckResult.safe]
+                [
+                    userId,
+                    resume || (profile && profile.summary) || '',
+                    objectif,
+                    ton || strategy.label,
+                    sujet || null,
+                    generatedPost,
+                    JSON.stringify(factCheckResult),
+                    factCheckResult.safe,
+                    type,
+                    JSON.stringify(sources),
+                ]
             );
+
+            // 5) APPRENTISSAGE : si le post est sûr et l'utilisateur identifié,
+            // on le mémorise dans SON RAG pour personnaliser ses futurs posts.
+            if (userId && factCheckResult.safe) {
+                try {
+                    await rag.rememberPost({
+                        userId,
+                        namespace: strategy.ragNamespace,
+                        content: generatedPost,
+                        metadata: { generationId: result.rows[0].id, type },
+                    });
+                } catch (memErr) {
+                    // Non bloquant : la mémoire est un bonus, pas un point de défaillance.
+                    console.warn('⚠️  Mémorisation RAG échouée (non bloquant):', memErr.message);
+                }
+            }
 
             res.json({
                 success: true,
                 data: {
                     id: result.rows[0].id,
                     post: generatedPost,
+                    type,
+                    isAiGenerated: true,         // transparence AI Act
+                    sources,                     // sources réelles (URLs)
+                    hasUnsourcedClaims: unsourced, // alerte : info factuelle sans source
+                    bullshitViolations: generation.bullshitViolations,
                     factCheck: factCheckResult,
                     createdAt: result.rows[0].created_at
                 }
@@ -86,8 +148,8 @@ class PostController {
 
             const originalPost = originalResult.rows[0].generated_post;
 
-            // Améliorer le post
-            const improvedPost = await aiService.improvePost(originalPost, feedback);
+            // Améliorer le post (nouveau noyau, voix conservée)
+            const improvedPost = await generationCore.improve(originalPost, feedback);
 
             // Fact-check du post amélioré
             const factCheckResult = await factChecker.verifySafeToPublish(improvedPost);

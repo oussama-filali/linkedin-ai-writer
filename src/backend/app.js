@@ -57,14 +57,18 @@ app.use((req, res, next) => {
 
 // Routes
 const postsRouter = require('./routes/posts');
-const predictionsRouter = require('./routes/predictions');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/posts', postsRouter);
-app.use('/api/predictions', predictionsRouter);
+
+// Module "prédiction" (score/variantes/timing) : conservé en code mais NON exposé
+// dans l'UI (décision : options internes, réservées pour le RAG #2 timing/notifs).
+// Pour le réactiver : décommenter les 2 lignes ci-dessous.
+// const predictionsRouter = require('./routes/predictions');
+// app.use('/api/predictions', predictionsRouter);
 
 // Route pour gérer les redirections Supabase (Email confirmation / OAuth)
 app.get('/', (req, res) => {
@@ -204,6 +208,7 @@ app.get('/', (req, res) => {
 
 // Log des routes disponibles
 console.log('📡 Routes API disponibles:');
+console.log('   GET  /api/posts/types');
 console.log('   POST /api/posts/generate');
 console.log('   POST /api/posts/improve');
 console.log('   POST /api/posts/check');
@@ -216,10 +221,6 @@ console.log('   GET  /api/auth/me');
 console.log('   POST /api/auth/logout');
 console.log('   GET  /api/users/preferences');
 console.log('   PATCH /api/users/preferences');
-console.log('   POST /api/predictions/analyze');
-console.log('   POST /api/predictions/verify');
-console.log('   POST /api/predictions/compare');
-console.log('   POST /api/predictions/timing');
 console.log('   GET  /health');
 
 // Health check (avec diagnostics)
