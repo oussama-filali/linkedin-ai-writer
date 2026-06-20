@@ -52,33 +52,48 @@ export interface ProfileSummary {
   summary?: string;
 }
 
+/** Type de post (entonnoir) tel qu'exposé par GET /api/posts/types */
+export interface PostType {
+  type: string;
+  label: string;
+  needsComment: boolean;
+}
+
+/** Source réelle attachée à une info factuelle du post */
+export interface PostSource {
+  claim: string;
+  source: string;
+  url: string;
+  rating?: string;
+}
+
 export interface GeneratePostPayload {
   /**
-   * Ancien champ, toujours supporté : résumé libre saisi par l'utilisateur.
-   * Si un profile est fourni, c'est profile.summary qui sera utilisé en priorité.
+   * Type de post choisi (storytelling | performance | reponse_commentaire | conseil).
+   * Pilote l'entonnoir côté backend.
    */
+  type: string;
+  /** Résumé/contexte libre saisi par l'utilisateur (le "qui parle"). */
   resume: string;
+  /** Ce que la personne veut dire (champ libre principal). */
   objectif: string;
-  ton: string;
+  ton?: string;
   sujet?: string;
   userId?: string;
-  /**
-   * Profil structuré anonymisé envoyé à l'IA (RGPD-friendly).
-   */
+  /** Commentaire à répondre (uniquement pour type reponse_commentaire). */
+  comment?: string;
+  /** Profil structuré anonymisé envoyé à l'IA (RGPD-friendly). */
   profile?: ProfileSummary;
-  meta?: {
-    audience?: string;
-    sector?: string;
-    domain?: string;
-    autoPublish?: boolean;
-    notifyBefore?: boolean;
-    slot?: string | null;
-  };
 }
 
 interface GeneratePostApiResponse {
   id: number;
   post: string;
+  type: string;
+  isAiGenerated: boolean;
+  sources: PostSource[];
+  hashtags: string[];
+  hasUnsourcedClaims: boolean;
   factCheck: FactCheckResult | null;
   createdAt: string;
 }
@@ -95,6 +110,10 @@ export interface HistoryRow {
   improvement_feedback: string | null;
   fact_check_result: FactCheckResult | null;
   is_safe: boolean | null;
+  post_type: string | null;
+  is_ai_generated: boolean | null;
+  sources: PostSource[] | null;
+  hashtags: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -111,6 +130,9 @@ export interface PostListItem {
   resume: string;
   objectif: string;
   sujet?: string | null;
+  type?: string | null;
+  sources?: PostSource[];
+  hashtags?: string[];
   factCheck?: FactCheckResult | null;
 }
 
@@ -120,11 +142,13 @@ export interface PostDetail {
   summary: string;
   body: string;
   tone: string;
+  type?: string;
+  isAiGenerated?: boolean;
+  sources?: PostSource[];
   createdAt?: string;
   factCheck?: FactCheckResult | null;
   insights?: string[];
   hashtags?: string[];
-  meta?: GeneratePostPayload['meta'];
 }
 
 export async function fetchPostsHistory(
@@ -146,12 +170,18 @@ export async function fetchPostById(id: string, token?: string | null) {
   return mapHistoryRowToDetail(row);
 }
 
+export async function fetchPostTypes(token?: string | null) {
+  return request<PostType[]>('/posts/types', { token });
+}
+
 export async function generatePost(payload: GeneratePostPayload, token?: string | null) {
   const body = {
+    type: payload.type,
     resume: payload.resume,
     objectif: payload.objectif,
     ton: payload.ton,
     sujet: payload.sujet,
+    comment: payload.comment,
     userId: payload.userId,
     profile: payload.profile,
   };
@@ -192,10 +222,13 @@ export function historyItemToDetail(item: PostListItem): PostDetail {
     summary: item.summary,
     body: item.body,
     tone: item.tone,
+    type: item.type ?? undefined,
+    sources: item.sources ?? [],
     createdAt: item.createdAt,
     factCheck: item.factCheck,
     insights: extractInsights(item.factCheck),
-    hashtags: extractHashtags(item.factCheck),
+    // Hashtags sauvegardés (sans le '#', l'affichage le rajoute).
+    hashtags: (item.hashtags ?? []).map((h) => h.replace(/^#/, '')),
   };
 }
 
@@ -219,6 +252,9 @@ function mapHistoryRowToListItem(row: HistoryRow): PostListItem {
     resume: row.resume,
     objectif: row.objectif,
     sujet: row.sujet,
+    type: row.post_type,
+    sources: row.sources ?? [],
+    hashtags: row.hashtags ?? [],
     factCheck: row.fact_check_result,
   };
 }
@@ -236,12 +272,15 @@ function mapGeneratedPostToDetail(
     title: deriveTitle(payload.sujet, response.post),
     summary: deriveSummary(payload.objectif, response.post),
     body: response.post,
-    tone: payload.ton,
+    tone: payload.ton ?? payload.type,
+    type: response.type,
+    isAiGenerated: response.isAiGenerated,
+    sources: response.sources ?? [],
     createdAt: response.createdAt,
     factCheck: response.factCheck,
     insights: extractInsights(response.factCheck),
-    hashtags: extractHashtags(response.factCheck),
-    meta: payload.meta,
+    // Hashtags : on retire le '#' (l'écran preview le rajoute à l'affichage).
+    hashtags: (response.hashtags ?? []).map((h) => h.replace(/^#/, '')),
   };
 }
 
@@ -270,12 +309,4 @@ function extractInsights(factCheck?: FactCheckResult | null) {
   const claims = factCheck?.analysis?.claims;
   if (!claims || claims.length === 0) return undefined;
   return claims.map((claim) => claim.text).filter(Boolean);
-}
-
-function extractHashtags(factCheck?: FactCheckResult | null) {
-  const hashtags = factCheck?.analysis?.hashtags;
-  if (Array.isArray(hashtags) && hashtags.length > 0) {
-    return hashtags;
-  }
-  return undefined;
 }

@@ -4,6 +4,8 @@ export interface AppUser {
   id: string;
   name: string;
   headline: string | null;
+  /** URL de la photo de profil (LinkedIn/Supabase), si disponible */
+  avatarUrl?: string | null;
   email?: string;
   provider?: 'supabase' | 'google';
   lastSync: string;

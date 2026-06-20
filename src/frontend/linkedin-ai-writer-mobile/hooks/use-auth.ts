@@ -63,15 +63,18 @@ function useProvideAuth() {
 
   const applySession = useCallback(async (accessToken: string, supabaseUser: any) => {
     // Utilisation directe de Supabase sans appel backend
+    const meta = supabaseUser.user_metadata ?? {};
     const user: AppUser = {
       id: supabaseUser.id,
-      name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Utilisateur',
-      headline: supabaseUser.user_metadata?.headline || null,
+      name: meta.name || meta.full_name || supabaseUser.email?.split('@')[0] || 'Utilisateur',
+      headline: meta.headline || null,
+      // Photo de profil : LinkedIn/Supabase la stockent sous avatar_url ou picture.
+      avatarUrl: meta.avatar_url || meta.picture || null,
       email: supabaseUser.email,
       provider: 'supabase',
       lastSync: new Date().toISOString(),
     };
-    
+
     console.log('✅ Session appliquée:', { userId: user.id, email: user.email, token: accessToken.substring(0, 20) + '...' });
     
     setState({
@@ -291,10 +294,12 @@ function useProvideAuth() {
     try {
       const { data: { user: supabaseUser } } = await supabase.auth.getUser();
       if (supabaseUser) {
+        const meta = supabaseUser.user_metadata ?? {};
         const user: AppUser = {
           id: supabaseUser.id,
-          name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Utilisateur',
-          headline: supabaseUser.user_metadata?.headline || null,
+          name: meta.name || meta.full_name || supabaseUser.email?.split('@')[0] || 'Utilisateur',
+          headline: meta.headline || null,
+          avatarUrl: meta.avatar_url || meta.picture || null,
           email: supabaseUser.email,
           provider: 'supabase',
           lastSync: new Date().toISOString(),
