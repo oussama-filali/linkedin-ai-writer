@@ -2,21 +2,23 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
-  Share,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Linking from 'expo-linking';
 import { useQuery } from '@tanstack/react-query';
 
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchPostById } from '@/services/post-service';
+import { ScheduleReminder } from '@/components/ScheduleReminder';
+import { EditPost } from '@/components/EditPost';
 import { usePostDraftStore, type PostDraftState } from '@/stores/post-draft-store';
 
 export default function PreviewScreen() {
@@ -32,7 +34,13 @@ export default function PreviewScreen() {
     enabled: Boolean(postId),
   });
 
-  const post = postId ? detailQuery.data : draft;
+  const basePost = postId ? detailQuery.data : draft;
+  // Texte modifié localement (après une demande de modification IA).
+  // Surcharge le corps du post sans muter la source.
+  const [editedBody, setEditedBody] = useState<string | null>(null);
+  const post = basePost
+    ? { ...basePost, body: editedBody ?? basePost.body }
+    : basePost;
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;
@@ -47,47 +55,22 @@ export default function PreviewScreen() {
   if (!post) {
     return (
       <View style={styles.emptyState}>
-        <Text style={styles.emptyTitle}>Aucun brouillon à afficher</Text>
+        <Text style={styles.emptyTitle}>Aucun post à afficher</Text>
         <Text style={styles.emptySubtitle}>Génère un post ou ouvre un élément depuis l’historique.</Text>
         <Pressable style={styles.primaryButton} onPress={() => router.push('/(tabs)/generate')}>
-          <Text style={styles.primaryButtonText}>Aller à Générer</Text>
+          <Text style={styles.primaryButtonText}>Créer un post</Text>
         </Pressable>
       </View>
     );
   }
 
-  const hashtags = post.hashtags?.length ? `#${post.hashtags.join(' #')}` : 'Aucun hashtag proposé';
+  const sources = post.sources ?? [];
+  const hashtags = post.hashtags?.length ? `#${post.hashtags.join(' #')}` : null;
 
   const composeText = () => {
     const blocks = [post.body?.trim()].filter(Boolean) as string[];
     const ht = post.hashtags?.length ? `\n\n#${post.hashtags.join(' #')}` : '';
     return `${blocks.join('\n\n')}${ht}`.trim();
-  };
-
-  const nextAt = (hours: number, minutes: number) => {
-    const now = new Date();
-    const when = new Date();
-    when.setHours(hours, minutes, 0, 0);
-    if (when.getTime() <= now.getTime()) when.setDate(when.getDate() + 1);
-    return when;
-  };
-
-  const handleSchedule = () => {
-    const options = [
-      { label: "12:30 aujourd'hui ou demain", date: nextAt(12, 30) },
-      { label: "17:30 aujourd'hui ou demain", date: nextAt(17, 30) },
-      { label: '08:30 demain (si passé)', date: nextAt(8, 30) },
-    ];
-
-    Alert.alert(
-      'Programmer un rappel',
-      'Choisis un horaire recommandé pour recevoir une notification et publier.',
-      [
-        { text: `📤 Partager maintenant`, onPress: () => handleShare() },
-        ...options.map((o) => ({ text: `⏰ ${o.label}`, onPress: () => scheduleAt(o.date) })),
-        { text: 'Fermer', style: 'cancel' },
-      ]
-    );
   };
 
   const handleCopy = async () => {
@@ -102,7 +85,6 @@ export default function PreviewScreen() {
         setCopied(true);
         return;
       }
-      // Essaye d'utiliser expo-clipboard si disponible (sans import statique)
       try {
         // @ts-ignore - module optionnel installé via Expo
         const Clipboard: any = await import('expo-clipboard');
@@ -112,142 +94,140 @@ export default function PreviewScreen() {
           return;
         }
       } catch {}
-      // Fallback: partage système (permet de coller ensuite dans LinkedIn)
       await Share.share({ message: text });
-    } catch (e) {
+    } catch {
       Alert.alert('Impossible de copier', 'Tu peux sélectionner et copier depuis la vue.');
     }
   };
 
   const handleShare = async () => {
     const text = composeText();
+
+    // Sur le web : Share.share() de React Native ne fonctionne pas.
+    // On utilise la Web Share API du navigateur, avec repli sur la copie.
+    if (Platform.OS === 'web') {
+      try {
+        if (typeof navigator !== 'undefined' && (navigator as any).share) {
+          await (navigator as any).share({ text });
+          return;
+        }
+        // Repli : copie dans le presse-papiers si le partage n'est pas dispo.
+        if (typeof navigator !== 'undefined' && (navigator as any).clipboard?.writeText) {
+          await (navigator as any).clipboard.writeText(text);
+          setCopied(true);
+          return;
+        }
+        Alert.alert('Partage indisponible', 'Copie le texte manuellement depuis la vue.');
+      } catch {
+        // L'utilisateur a annulé le partage, ou erreur : on ignore silencieusement.
+      }
+      return;
+    }
+
+    // Sur mobile (iOS/Android) : partage natif.
     try {
       await Share.share({ message: text });
     } catch {
-      // ignore
+      // ignore (annulation utilisateur)
     }
   };
 
-  const scheduleAt = async (fireDate: Date) => {
-    try {
-      // @ts-ignore - module optionnel installé via Expo
-      const Notifications: any = await import('expo-notifications');
-      if (!Notifications?.scheduleNotificationAsync) {
-        Alert.alert('Programmation indisponible', 'Module de notifications manquant.');
-        return;
-      }
-      // Demander les permissions si nécessaire
-      const perms = await Notifications.getPermissionsAsync();
-      if (!perms.granted) {
-        const ask = await Notifications.requestPermissionsAsync();
-        if (!ask.granted) {
-          Alert.alert('Permission requise', 'Active les notifications pour programmer un rappel.');
-          return;
-        }
-      }
-      // Optionnel: handler par défaut pour afficher l'alerte
-      if (Notifications.setNotificationHandler) {
-        Notifications.setNotificationHandler({
-          handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: false, shouldSetBadge: false }),
-        });
-      }
-      const text = composeText();
-      // S'assurer que l'horaire est bien le prochain créneau local
-      const now = new Date();
-      const local = new Date(fireDate);
-      if (local.getTime() <= now.getTime()) {
-        local.setDate(local.getDate() + 1);
-      }
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Publier sur LinkedIn',
-          body: 'Rappel: ton post est prêt. Clique pour copier et publier.',
-          data: { text },
-        },
-        trigger: local,
-      });
-      Alert.alert('Programmé', `Rappel prévu le ${local.toLocaleString()}`);
-    } catch (e) {
-      Alert.alert('Programmation échouée', 'Impossible de planifier un rappel.');
-    }
-  };
-
-  const handleReset = () => {
-    if (!postId) {
-      clearDraft();
-    }
+  const handleClose = () => {
+    if (!postId) clearDraft();
     router.back();
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{post.title}</Text>
-      <Text style={styles.subtitle}>{post.summary}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>{post.title}</Text>
+        {post.isAiGenerated !== false && (
+          <View style={styles.aiBadge}>
+            <Text style={styles.aiBadgeText}>✨ Généré par IA</Text>
+          </View>
+        )}
+      </View>
+      {post.type ? <Text style={styles.typeLabel}>Type · {post.type}</Text> : null}
 
       <View style={styles.card}>
-        <Text style={styles.sectionLabel}>Contenu</Text>
+        <Text style={styles.sectionLabel}>Le post</Text>
         <Text style={styles.body}>{post.body}</Text>
       </View>
 
-      {post.insights?.length ? (
+      {/* Sources réelles (URLs vérifiables) attachées aux infos factuelles */}
+      {sources.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>Angles proposés</Text>
-          {post.insights.map((insight: string) => (
-            <Text key={insight} style={styles.bullet}>
-              • {insight}
-            </Text>
+          <Text style={styles.sectionLabel}>Sources vérifiées</Text>
+          {sources.map((s, i) => (
+            <Pressable key={`${s.url}-${i}`} onPress={() => Linking.openURL(s.url)}>
+              <Text style={styles.sourceName}>{s.source}</Text>
+              <Text style={styles.sourceUrl} numberOfLines={1}>
+                {s.url}
+              </Text>
+            </Pressable>
           ))}
+        </View>
+      ) : (
+        <View style={styles.cardMuted}>
+          <Text style={styles.mutedText}>
+            Aucune source externe : ce post s’appuie sur ton vécu, sans affirmation factuelle à vérifier.
+          </Text>
+        </View>
+      )}
+
+      {hashtags ? (
+        <View style={styles.card}>
+          <Text style={styles.sectionLabel}>Hashtags</Text>
+          <Text style={styles.hashtags}>{hashtags}</Text>
         </View>
       ) : null}
 
-      <View style={styles.card}>
-        <Text style={styles.sectionLabel}>Hashtags</Text>
-        <Text style={styles.hashtags}>{hashtags}</Text>
-      </View>
+      {/* Modification du post via l'IA (selon un retour de l'utilisateur) */}
+      {post.id ? (
+        <EditPost postId={post.id} onUpdated={(newText) => setEditedBody(newText)} />
+      ) : null}
+
+      {/* Programmation d'un rappel au meilleur créneau (heure locale) */}
+      <ScheduleReminder type={post.type} text={composeText()} />
 
       <View style={styles.actions}>
-        <Pressable style={[styles.primaryButton, styles.actionButton]} onPress={handleSchedule}>
-          <Text style={styles.primaryButtonText}>Programmer</Text>
+        <Pressable style={[styles.primaryButton, styles.actionButton]} onPress={handleCopy}>
+          <Text style={styles.primaryButtonText}>Copier</Text>
         </Pressable>
-        <Pressable style={[styles.secondaryButton, styles.actionButton]} onPress={handleCopy}>
-          <Text style={styles.secondaryButtonText}>Copier</Text>
+        <Pressable style={[styles.secondaryButton, styles.actionButton]} onPress={handleShare}>
+          <Text style={styles.secondaryButtonText}>Partager</Text>
         </Pressable>
-        <Pressable style={[styles.secondaryButton, styles.actionButton]} onPress={handleReset}>
+        <Pressable style={[styles.secondaryButton, styles.actionButton]} onPress={handleClose}>
           <Text style={styles.secondaryButtonText}>Fermer</Text>
         </Pressable>
-        {copied ? (
-          <View style={{
-            backgroundColor: '#22c55e',
-            padding: 10,
-            borderRadius: 6,
-            marginTop: 8,
-          }}>
-            <Text style={{ color: 'white', textAlign: 'center' }}>Copié dans le presse‑papiers</Text>
-          </View>
-        ) : null}
       </View>
+      {copied ? (
+        <View style={styles.copiedBanner}>
+          <Text style={styles.copiedText}>Copié dans le presse‑papiers</Text>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f6fa',
+  container: { flex: 1, backgroundColor: '#f5f6fa' },
+  content: { padding: 20, gap: 16, paddingBottom: 40 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 40,
+  title: { fontSize: 24, fontWeight: '700', color: '#0b1831', flex: 1 },
+  aiBadge: {
+    backgroundColor: 'rgba(10,126,164,0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0b1831',
-  },
-  subtitle: {
-    color: '#475467',
-  },
+  aiBadgeText: { color: Colors.light.tint, fontWeight: '600', fontSize: 12 },
+  typeLabel: { color: '#475467', textTransform: 'capitalize' },
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -258,6 +238,12 @@ const styles = StyleSheet.create({
     elevation: 2,
     gap: 10,
   },
+  cardMuted: {
+    backgroundColor: 'rgba(15,23,42,0.03)',
+    borderRadius: 16,
+    padding: 14,
+  },
+  mutedText: { color: '#6b7280', fontSize: 13 },
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
@@ -265,36 +251,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
-  body: {
-    color: '#0f172a',
-    lineHeight: 22,
-  },
-  bullet: {
-    color: '#0f172a',
-    marginTop: 4,
-  },
-  hashtags: {
-    color: Colors.light.tint,
-    fontWeight: '600',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-  },
+  body: { color: '#0f172a', lineHeight: 22 },
+  sourceName: { color: '#0f172a', fontWeight: '600', marginTop: 8 },
+  sourceUrl: { color: Colors.light.tint, fontSize: 13 },
+  hashtags: { color: Colors.light.tint, fontWeight: '600' },
+  actions: { flexDirection: 'row', gap: 12 },
+  actionButton: { flex: 1 },
   primaryButton: {
     backgroundColor: Colors.light.tint,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  primaryButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
+  primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   secondaryButton: {
     borderWidth: 1,
     borderColor: 'rgba(10,126,164,0.4)',
@@ -302,11 +271,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  secondaryButtonText: {
-    color: Colors.light.tint,
-    fontWeight: '700',
-    fontSize: 16,
-  },
+  secondaryButtonText: { color: Colors.light.tint, fontWeight: '700', fontSize: 16 },
+  copiedBanner: { backgroundColor: '#22c55e', padding: 10, borderRadius: 8 },
+  copiedText: { color: 'white', textAlign: 'center' },
   emptyState: {
     flex: 1,
     backgroundColor: '#f5f6fa',
@@ -315,13 +282,6 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 12,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  emptySubtitle: {
-    color: '#475467',
-    textAlign: 'center',
-  },
+  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#0f172a' },
+  emptySubtitle: { color: '#475467', textAlign: 'center' },
 });

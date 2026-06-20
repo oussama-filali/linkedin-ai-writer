@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -105,12 +104,6 @@ function HistoryCard({
       <View style={styles.cardFooter}>
         <Pressable style={({ pressed }) => [styles.cardButton, pressed && { opacity: 0.75 }]} onPress={onView}>
           <Text style={styles.cardButtonText}>Voir le post</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.cardButtonGhost, pressed && { opacity: 0.6 }]}
-          onPress={() => Alert.alert('Planning à venir', 'La reprogrammation arrivera bientôt.')}
-        >
-          <Text style={styles.cardButtonGhostText}>Planifier bientôt</Text>
         </Pressable>
       </View>
     </View>
@@ -242,18 +235,6 @@ const styles = StyleSheet.create({
   },
   cardButtonText: {
     color: '#fff',
-    fontWeight: '600',
-  },
-  cardButtonGhost: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(10,126,164,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardButtonGhostText: {
-    color: '#0a7ea4',
     fontWeight: '600',
   },
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,17 +15,28 @@ import ThreeIntro from '@/components/ThreeIntro';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 
+/** Renvoie les initiales d'un nom pour l'avatar de secours. */
+function getInitials(name?: string): string {
+  if (!name) return '?';
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p.charAt(0).toUpperCase())
+    .join('');
+}
+
 const highlights = [
-  'Génération IA multi-ton instantanée',
-  'Programmation intelligente et notifications push',
-  'Fact-check + analyse d’engagement intégrés',
+  'Tu choisis le type : storytelling, conseil, réponse, performance',
+  'Une voix humaine et personnalisée selon tes posts passés',
+  'Fact-check automatique avec de vraies sources',
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
   const { isAuthenticated, checkingSession, authenticating, user } = useAuth();
 
-  const ctaLabel = isAuthenticated ? 'Entrer dans le studio' : 'Connecter LinkedIn';
+  const ctaLabel = isAuthenticated ? 'Créer un post' : 'Se connecter';
 
   const handlePrimaryAction = () => {
     if (isAuthenticated) {
@@ -40,20 +52,35 @@ export default function HomeScreen() {
         <View style={styles.canvasWrapper}>
           <ThreeIntro />
         </View>
-        <Text style={styles.title}>LinkedIn AI Autopilot</Text>
+        <Text style={styles.title}>LinkedIn AI Writer</Text>
         <Text style={styles.subtitle}>
-          Prépare tes campagnes, synchronise-les et laisse l’automatisation demander ton feu vert avant
-going live.
+          Choisis un type de post, dis ce que tu veux raconter, et obtiens un post qui sonne
+          vraiment comme toi — vérifié et sourcé.
         </Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {checkingSession || authenticating
-              ? 'Vérification de la session...'
-              : isAuthenticated
-                ? `Connecté en tant que ${user?.name}`
-                : 'Tu n’es pas connecté'}
-          </Text>
-        </View>
+        {checkingSession || authenticating ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>Vérification de la session...</Text>
+          </View>
+        ) : isAuthenticated ? (
+          // Carte profil : photo (ou initiales) à côté du nom/prénom
+          <View style={styles.profileRow}>
+            {user?.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <Text style={styles.avatarInitials}>{getInitials(user?.name)}</Text>
+              </View>
+            )}
+            <View>
+              <Text style={styles.profileName}>{user?.name ?? 'Profil'}</Text>
+              <Text style={styles.profileStatus}>Connecté</Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>Tu n’es pas connecté</Text>
+          </View>
+        )}
         <View style={styles.highlightWrapper}>
           {highlights.map((item) => (
             <View key={item} style={styles.highlightItem}>
@@ -121,6 +148,45 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: '#0077b5',
+    fontWeight: '600',
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e2e8f0',
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10,126,164,0.15)',
+  },
+  avatarInitials: {
+    color: '#0a7ea4',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  profileName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0b1831',
+  },
+  profileStatus: {
+    fontSize: 12,
+    color: '#22c55e',
     fontWeight: '600',
   },
   highlightWrapper: {

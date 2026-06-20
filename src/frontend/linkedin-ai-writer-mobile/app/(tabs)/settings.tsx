@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -12,6 +12,17 @@ const DEFAULT_PREFS: UserPreferences = {
   notifyBeforeDefault: true,
   defaultSlot: null,
 };
+
+/** Renvoie les initiales d'un nom pour l'avatar de secours. */
+function getInitials(name?: string): string {
+  if (!name) return '?';
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p.charAt(0).toUpperCase())
+    .join('');
+}
 
 export default function SettingsScreen() {
   const { user, isAuthenticated, logout, token } = useAuth();
@@ -46,16 +57,32 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.pageTitle}>Préférences & sécurité</Text>
-      <Text style={styles.pageSubtitle}>Ajuste les rappels, l’automatisation et ta connexion LinkedIn.</Text>
+      <Text style={styles.pageTitle}>Profil & préférences</Text>
+      <Text style={styles.pageSubtitle}>Gère ton compte et tes rappels de publication.</Text>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Compte LinkedIn</Text>
-        <Text style={styles.sectionSubtitle}>
-          {isAuthenticated
-            ? `${user?.name ?? 'Profil Supabase'}${user?.headline ? ` — ${user.headline}` : ''}`
-            : 'Aucun compte connecté'}
-        </Text>
+        <Text style={styles.sectionTitle}>Mon compte</Text>
+        <View style={styles.profileRow}>
+          {/* Photo de profil (LinkedIn/Supabase), avec repli sur les initiales */}
+          {user?.avatarUrl ? (
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarInitials}>{getInitials(user?.name)}</Text>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileName}>
+              {isAuthenticated ? user?.name ?? 'Profil' : 'Aucun compte connecté'}
+            </Text>
+            {isAuthenticated && user?.email ? (
+              <Text style={styles.profileEmail}>{user.email}</Text>
+            ) : null}
+            {isAuthenticated && user?.headline ? (
+              <Text style={styles.profileEmail}>{user.headline}</Text>
+            ) : null}
+          </View>
+        </View>
         <Pressable
           onPress={isAuthenticated ? logout : undefined}
           style={({ pressed }) => [styles.outlineButton, pressed && { opacity: 0.7 }]}
@@ -67,35 +94,19 @@ export default function SettingsScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Notifications</Text>
         <SettingRow
-          title="Recevoir des push"
-          description="Résumés quotidiens, rappels avant envoi"
+          title="Rappels de publication"
+          description="Reçois une notification au créneau choisi pour publier"
           value={preferences.pushEnabled}
           onChange={(value) => updatePreference({ pushEnabled: value })}
           disabled={!isAuthenticated}
         />
         <SettingRow
-          title="Alerte critique"
-          description="Notifie si un post est bloqué par le fact-check"
+          title="Alerte fact-check"
+          description="Sois prévenu si un post contient une info à vérifier"
           value={preferences.factCheckEnabled}
           onChange={(value) => updatePreference({ factCheckEnabled: value })}
           disabled={!isAuthenticated}
         />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Automatisation</Text>
-        <SettingRow
-          title="Autoriser l’auto-post"
-          description="Publier sans confirmation nécessaire"
-          value={preferences.autoPostEnabled}
-          onChange={(value) => updatePreference({ autoPostEnabled: value })}
-          disabled={!isAuthenticated}
-        />
-        <Pressable
-          style={({ pressed }) => [styles.linkButton, pressed && { opacity: 0.6 }]}
-          disabled>
-          <Text style={styles.linkText}>Configurer les heures idéales</Text>
-        </Pressable>
         {!isAuthenticated && (
           <Text style={styles.hintText}>Connecte-toi pour sauvegarder ces préférences.</Text>
         )}
@@ -171,8 +182,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#0f172a',
   },
-  sectionSubtitle: {
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#e2e8f0',
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10,126,164,0.15)',
+  },
+  avatarInitials: {
+    color: '#0a7ea4',
+    fontWeight: '700',
+    fontSize: 20,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  profileEmail: {
     color: '#475467',
+    fontSize: 13,
+    marginTop: 2,
   },
   outlineButton: {
     borderWidth: 1,
@@ -197,13 +236,6 @@ const styles = StyleSheet.create({
   },
   settingSubtitle: {
     color: '#475467',
-  },
-  linkButton: {
-    alignSelf: 'flex-start',
-  },
-  linkText: {
-    color: '#0a7ea4',
-    fontWeight: '600',
   },
   hintText: {
     color: '#94a3b8',

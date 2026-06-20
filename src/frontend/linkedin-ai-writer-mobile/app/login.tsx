@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import Constants from 'expo-constants';
+import * as Linking from 'expo-linking';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/services/supabase-client';
@@ -21,18 +21,6 @@ WebBrowser.maybeCompleteAuthSession();
 
 function urlHasAuthCode(url: string) {
   return url.includes('code=');
-}
-
-function getExpoProjectFullName() {
-  const expoConfig = Constants.expoConfig ?? (Constants as any).manifest;
-  const originalFullName = expoConfig?.originalFullName as string | undefined;
-  if (originalFullName) return originalFullName;
-
-  const owner = expoConfig?.owner as string | undefined;
-  const slug = expoConfig?.slug as string | undefined;
-  if (owner && slug) return `@${owner}/${slug}`;
-
-  return null;
 }
 
 export default function LoginScreen() {
@@ -78,15 +66,10 @@ export default function LoginScreen() {
       return `${window.location.origin}/auth/callback`;
     }
 
-    // Expo Go: LinkedIn n'accepte pas exp://, on passe donc par le proxy Expo (HTTPS).
-    // Le proxy a besoin du project full name: @owner/slug.
-    const projectFullName = getExpoProjectFullName();
-    if (!projectFullName) {
-      throw new Error(
-        "Projet Expo non identifié. Ajoute 'owner' dans app.json (Expo account username) ou passe projectNameForProxy." 
-      );
-    }
-    return `https://auth.expo.io/${projectFullName}/auth/callback`;
+    // Mobile: deep link direct via le scheme de l'app.
+    // (L'ancien proxy auth.expo.io a été fermé par Expo -> renvoyait "not found".)
+    // Linking.createURL produit "linkedinaiwritermobile://auth/callback" (ou exp://... en Expo Go).
+    return Linking.createURL('/auth/callback');
   };
 
   const handleLinkedInLogin = async () => {
@@ -152,16 +135,10 @@ export default function LoginScreen() {
           onChangeText={setEmail}
         />
         <TextInput
-                  onPress={() => {
-                    // Évite l'erreur "GO_BACK" quand aucun écran précédent n'existe
-                    if ((router as any).canGoBack?.()) {
-                      router.back();
-                    } else {
-                      router.replace('/(tabs)/home');
-                    }
-                  }}
+          style={styles.input}
           secureTextEntry
-          placeholder="Mot de passe Super Secret"
+          autoCapitalize="none"
+          placeholder="Mot de passe"
           value={password}
           onChangeText={setPassword}
         />
@@ -201,7 +178,16 @@ export default function LoginScreen() {
           <Text style={styles.oauthText}>Continuer avec LinkedIn</Text>
         </Pressable>
 
-        <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}>
+        <Pressable
+          onPress={() => {
+            // Évite l'erreur "GO_BACK" quand aucun écran précédent n'existe.
+            if ((router as any).canGoBack?.()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/home');
+            }
+          }}
+          style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}>
           <Text style={styles.backText}>← Retour</Text>
         </Pressable>
       </View>
