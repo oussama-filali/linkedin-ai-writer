@@ -166,13 +166,13 @@ async function verifySupabaseToken(token) {
     const jwks = keys.find(k => k.kid === kid);
     if (!jwks) throw new Error('kid non correspondant dans JWKS');
     try {
-      const { importJWK } = require('jose');
+      const { importJWK, jwtVerify } = require('jose');
       const keyLike = await importJWK(jwks, 'ES256');
-      const { jwtVerify } = require('jose');
       const verifyResult = await jwtVerify(token, keyLike, {});
       return verifyResult.payload;
     } catch (e) {
-      throw new Error('Installez la dépendance "jose" pour vérification ES256: npm install jose');
+      // On remonte la VRAIE erreur de vérification (au lieu d'un message trompeur sur "jose").
+      throw new Error(`Vérification ES256 échouée: ${e.message}`);
     }
   }
   throw new Error(`Algorithme JWT Supabase non supporté: ${alg}`);

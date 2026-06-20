@@ -2,6 +2,7 @@ const generationCore = require('../../ia/generation-core');
 const factChecker = require('../../ia/fact-checking/fact-checker');
 const { getStrategy, DEFAULT_TYPE, listTypes } = require('../../ia/strategies/strategy-registry');
 const { extractSources, hasUnsourcedClaims } = require('../../ia/fact-checking/source-extractor');
+const { buildHashtags } = require('../../ia/hashtag-service');
 const rag = require('../../ia/rag/rag-service');
 const db = require('../../config/database');
 
@@ -60,23 +61,38 @@ class PostController {
             const sources = extractSources(factCheckResult);
             const unsourced = hasUnsourcedClaims(factCheckResult);
 
-            // 4) Sauvegarde + transparence AI Act (is_ai_generated = true).
+            // 4) HASHTAGS pertinents (IA), cohérents avec le sujet, pour la portée.
+            //    Non bloquant : si l'IA échoue, on continue sans hashtags.
+            let hashtags = [];
+            try {
+                const hashtagResult = await buildHashtags(generatedPost, {
+                    secteur: (profile && profile.sector) || undefined,
+                });
+                hashtags = hashtagResult.hashtags;
+            } catch (htErr) {
+                console.warn('⚠️  Hashtags non générés (non bloquant):', htErr.message);
+            }
+
+            // 5) Sauvegarde + transparence AI Act (is_ai_generated = true).
             const result = await db.query(
                 `INSERT INTO generations_history
-                (user_id, resume, objectif, ton, sujet, generated_post, fact_check_result, is_safe, post_type, is_ai_generated, sources)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10)
+                (user_id, resume, objectif, ton, sujet, generated_post, fact_check_result, is_safe, post_type, is_ai_generated, sources, hashtags)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10, $11)
                 RETURNING id, created_at`,
                 [
                     userId,
                     resume || (profile && profile.summary) || '',
                     objectif,
-                    ton || strategy.label,
+                    // 'ton' est legacy : la table n'accepte que professionnel|inspirant|engagé.
+                    // Le vrai concept est maintenant 'post_type'. On garde une valeur valide.
+                    ['professionnel', 'inspirant', 'engagé'].includes(ton) ? ton : 'professionnel',
                     sujet || null,
                     generatedPost,
                     JSON.stringify(factCheckResult),
                     factCheckResult.safe,
                     type,
                     JSON.stringify(sources),
+                    JSON.stringify(hashtags),
                 ]
             );
 
@@ -104,6 +120,7 @@ class PostController {
                     type,
                     isAiGenerated: true,         // transparence AI Act
                     sources,                     // sources réelles (URLs)
+                    hashtags,                    // hashtags pertinents pour la portée
                     hasUnsourcedClaims: unsourced, // alerte : info factuelle sans source
                     bullshitViolations: generation.bullshitViolations,
                     factCheck: factCheckResult,

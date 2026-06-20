@@ -47,6 +47,31 @@ function todayLine() {
 }
 
 /**
+ * Détecte si le brief demande des faits / études / sources / chiffres.
+ * Sert à renforcer le garde-fou anti-invention (on ne fabrique JAMAIS de source).
+ * @param {string} brief
+ * @returns {boolean}
+ */
+function asksForSources(brief) {
+  if (!brief) return false;
+  const re = /\b(source|sources|étude|études|etude|etudes|recherche|académique|academique|statistique|stats?|chiffres?|données|donnees|preuve|preuves|référence|reference|citer|cite|fait scientifique)\b/i;
+  return re.test(brief);
+}
+
+/**
+ * Instruction de garde-fou quand l'utilisateur réclame des sources/faits.
+ * On ne laisse JAMAIS le modèle inventer une étude ou une statistique.
+ */
+const SOURCES_GUARD = `IMPORTANT — DEMANDE DE SOURCES/FAITS DÉTECTÉE :
+L'utilisateur demande des faits, études ou sources. Tu n'as PAS accès à une base
+de sources vérifiables. Donc :
+- N'INVENTE AUCUNE étude, statistique, chiffre, date ou nom d'auteur. Jamais.
+- Si tu ne disposes pas d'une source réelle et vérifiable, dis-le clairement et
+  honnêtement dans le post (par ex. "je n'ai pas de chiffre précis à citer ici"),
+  ou reformule en t'appuyant sur l'expérience vécue ("d'après ce que j'observe").
+- Mieux vaut un post honnête sans source qu'un post avec une fausse source.`;
+
+/**
  * Assemble le user prompt : brief + profil + mémoire perso + cadre + date.
  * PAS d'exemples imposés : la mémoire perso sert à personnaliser le style.
  */
@@ -114,14 +139,20 @@ async function generate({ type, brief, profile, comment, userId }) {
 
   const userPrompt = buildUserPrompt({ strategy, brief, profileLine, comment, memory, method, banned });
 
+  // Si l'utilisateur demande des sources/faits : garde-fou anti-invention.
+  const needsSourcesGuard = asksForSources(brief);
+  const baseSystem = needsSourcesGuard
+    ? `${strategy.systemInstructions}\n\n${SOURCES_GUARD}`
+    : strategy.systemInstructions;
+
   let lastPost = '';
   let lastViolations = [];
 
   for (let attempt = 0; attempt <= MAX_REGEN; attempt++) {
     const systemPrompt =
       attempt === 0
-        ? strategy.systemInstructions
-        : `${strategy.systemInstructions}\n\nATTENTION : la version précédente contenait des clichés interdits (${lastViolations
+        ? baseSystem
+        : `${baseSystem}\n\nATTENTION : la version précédente contenait des clichés interdits (${lastViolations
             .map((v) => v.label)
             .join(', ')}). Réécris SANS aucun de ces travers.`;
 
