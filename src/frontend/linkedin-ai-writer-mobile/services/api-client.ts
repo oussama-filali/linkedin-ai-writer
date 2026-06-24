@@ -1,6 +1,11 @@
 import Constants from 'expo-constants';
 
-const DEFAULT_BASE_URL = 'http://localhost:3000/api';
+// URL du backend en PRODUCTION (Render). Utilisée dans le build (.apk) et
+// quand aucune URL de dev n'est détectée. C'est ce que joignent les testeurs.
+const PROD_BASE_URL = 'https://linkedin-ai-writer.onrender.com/api';
+
+// Fallback ultime (rare) : utilisé seulement si rien d'autre n'est trouvé.
+const DEFAULT_BASE_URL = PROD_BASE_URL;
 
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
@@ -47,15 +52,19 @@ function getBaseUrl() {
     (expoExtra?.apiBaseUrl as string | undefined) ??
     (process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined);
 
+  // 1) URL configurée explicitement (app.json extra.apiBaseUrl ou variable d'env).
   if (configured) {
     return configured.replace(/\/$/, '');
   }
 
+  // 2) En développement local (Expo Go), on dérive l'URL du dev server (localhost
+  //    sur le même réseau). hostUri n'existe QUE quand on lance via Expo en dev.
   const devAuto = getDevBaseUrlFromExpo();
   if (devAuto) {
     return devAuto;
   }
 
+  // 3) Sinon (build .apk de production) : on tape le backend Render en ligne.
   return DEFAULT_BASE_URL.replace(/\/$/, '');
 }
 
