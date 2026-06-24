@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-import ThreeIntro from '@/components/ThreeIntro';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -49,10 +48,17 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.canvasWrapper}>
-          <ThreeIntro />
+        {/* Photo de profil de l'utilisateur connecté (remplace l'ancienne animation 3D) */}
+        <View style={styles.heroWrapper}>
+          {user?.avatarUrl ? (
+            <Image source={{ uri: user.avatarUrl }} style={styles.heroAvatar} />
+          ) : (
+            <View style={[styles.heroAvatar, styles.avatarFallback]}>
+              <Text style={styles.heroInitials}>{getInitials(user?.name)}</Text>
+            </View>
+          )}
         </View>
-        <Text style={styles.title}>LinkedIn AI Writer</Text>
+        <Text style={styles.title}>LinkIA_Writer</Text>
         <Text style={styles.subtitle}>
           Choisis un type de post, dis ce que tu veux raconter, et obtiens un post qui sonne
           vraiment comme toi — vérifié et sourcé.
@@ -62,15 +68,8 @@ export default function HomeScreen() {
             <Text style={styles.badgeText}>Vérification de la session...</Text>
           </View>
         ) : isAuthenticated ? (
-          // Carte profil : photo (ou initiales) à côté du nom/prénom
+          // Nom de l'utilisateur connecté
           <View style={styles.profileRow}>
-            {user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarInitials}>{getInitials(user?.name)}</Text>
-              </View>
-            )}
             <View>
               <Text style={styles.profileName}>{user?.name ?? 'Profil'}</Text>
               <Text style={styles.profileStatus}>Connecté</Text>
@@ -124,9 +123,23 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     gap: 18,
   },
-  canvasWrapper: {
+  heroWrapper: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 8,
+  },
+  heroAvatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#e2e8f0',
+    borderWidth: 3,
+    borderColor: 'rgba(10,126,164,0.25)',
+  },
+  heroInitials: {
+    color: '#0a7ea4',
+    fontWeight: '700',
+    fontSize: 44,
   },
   title: {
     fontSize: 26,
@@ -163,21 +176,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 1,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#e2e8f0',
-  },
   avatarFallback: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(10,126,164,0.15)',
-  },
-  avatarInitials: {
-    color: '#0a7ea4',
-    fontWeight: '700',
-    fontSize: 16,
   },
   profileName: {
     fontSize: 15,

@@ -14,7 +14,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
       <Animated.View style={styles.logoContainer}>
         <Text style={styles.logo}>🤖</Text>
       </Animated.View>
-      <Text style={styles.title}>LinkedIn AI Writer</Text>
+      <Text style={styles.title}>LinkIA_Writer</Text>
       <ActivityIndicator size="large" color="#0077b5" style={{ marginTop: 24 }} />
     </View>
   );

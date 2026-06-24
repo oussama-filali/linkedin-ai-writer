@@ -23,7 +23,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <ActivityIndicator size="large" color="#0077b5" style={styles.loader} />
-        <Text style={styles.title}>LinkedIn AI Writer Mobile</Text>
+        <Text style={styles.title}>LinkIA_Writer</Text>
         <Text style={styles.subtitle}>Chargement...</Text>
       </View>
     </SafeAreaView>
