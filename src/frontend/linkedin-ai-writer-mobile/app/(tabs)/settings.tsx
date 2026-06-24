@@ -7,10 +7,7 @@ import { UserPreferences, getUserPreferences, updateUserPreferences } from '@/se
 
 const DEFAULT_PREFS: UserPreferences = {
   pushEnabled: true,
-  autoPostEnabled: false,
   factCheckEnabled: true,
-  notifyBeforeDefault: true,
-  defaultSlot: null,
 };
 
 /** Renvoie les initiales d'un nom pour l'avatar de secours. */

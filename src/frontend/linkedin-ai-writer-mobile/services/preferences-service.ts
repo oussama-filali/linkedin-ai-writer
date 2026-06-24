@@ -1,11 +1,14 @@
 import { request } from './api-client';
 
+/**
+ * Préférences utilisateur RÉELLEMENT utilisées dans l'app.
+ * (Le rappel de publication se règle désormais sur l'écran résultat, pas ici :
+ * on a donc retiré autoPost / notifyBefore / defaultSlot qui étaient des
+ * préférences fantômes héritées de l'ancienne version.)
+ */
 export interface UserPreferences {
   pushEnabled: boolean;
-  autoPostEnabled: boolean;
   factCheckEnabled: boolean;
-  notifyBeforeDefault: boolean;
-  defaultSlot?: string | null;
 }
 
 export async function getUserPreferences(token?: string | null) {
