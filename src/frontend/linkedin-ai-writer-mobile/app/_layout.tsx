@@ -46,25 +46,28 @@ export default function RootLayout() {
         // @ts-ignore - available after installing expo-notifications
         const Notifications: any = await import('expo-notifications');
 
+        // Handler global : un rappel doit être VISIBLE et SONORE pour ne pas être manqué.
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
-            shouldPlaySound: false,
+            shouldPlaySound: true,
             shouldSetBadge: false,
           }),
         });
 
+        // Demande de permission (obligatoire pour afficher des notifications).
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
+          await Notifications.requestPermissionsAsync();
         }
 
+        // Channel Android (obligatoire Android 8+). HIGH = la notif apparaît
+        // bien à l'écran avec son, indispensable pour un rappel de publication.
         if (mounted && Platform.OS === 'android') {
           await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.DEFAULT,
+            name: 'Rappels de publication',
+            importance: Notifications.AndroidImportance.HIGH,
+            sound: 'default',
           });
         }
       } catch (e) {
