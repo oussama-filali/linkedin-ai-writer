@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/services/supabase-client';
@@ -66,10 +65,11 @@ export default function LoginScreen() {
       return `${window.location.origin}/auth/callback`;
     }
 
-    // Mobile: deep link direct via le scheme de l'app.
-    // (L'ancien proxy auth.expo.io a été fermé par Expo -> renvoyait "not found".)
-    // Linking.createURL produit "linkedinaiwritermobile://auth/callback" (ou exp://... en Expo Go).
-    return Linking.createURL('/auth/callback');
+    // Mobile (build .apk/.ipa) : on FORCE le scheme natif de l'app.
+    // Sinon Linking.createURL retombe sur localhost:8081 / exp:// (contexte dev),
+    // ce qui casse le retour OAuth dans une app installée.
+    // Le scheme 'linkedinaiwritermobile' est défini dans app.json.
+    return 'linkedinaiwritermobile://auth/callback';
   };
 
   const handleLinkedInLogin = async () => {

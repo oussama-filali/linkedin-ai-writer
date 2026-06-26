@@ -17,6 +17,9 @@
       "supabase": {
         "url": "https://chkzyzcclkfyagkipnvg.supabase.co",
         "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoa3p5emNjbGtmeWFna2lwbnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMzMzNzQsImV4cCI6MjA3ODYwOTM3NH0.KjbUE-khVaJMzj4jx6vuw9zgm1GSZB_SMMDvGJbji-s"
+      },
+      "eas": {
+        "projectId": "e49478fa-d026-44fb-8c1e-20e8873eab7d"
       }
     },
     "ios": {
@@ -44,8 +47,22 @@
             "BROWSABLE",
             "DEFAULT"
           ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "linkedinaiwritermobile",
+              "host": "*"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
-      ]
+      ],
+      "package": "com.oussama1357.linkedinaiwritermobile"
     },
     "web": {
       "output": "static",
@@ -70,6 +87,12 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e49478fa-d026-44fb-8c1e-20e8873eab7d"
     }
   }
 }

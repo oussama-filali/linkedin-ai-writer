@@ -53,18 +53,14 @@ function getBaseUrl() {
     (process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined);
 
   // 1) URL configurée explicitement (app.json extra.apiBaseUrl ou variable d'env).
+  //    À utiliser SEULEMENT si tu veux forcer un backend local en dev.
   if (configured) {
     return configured.replace(/\/$/, '');
   }
 
-  // 2) En développement local (Expo Go), on dérive l'URL du dev server (localhost
-  //    sur le même réseau). hostUri n'existe QUE quand on lance via Expo en dev.
-  const devAuto = getDevBaseUrlFromExpo();
-  if (devAuto) {
-    return devAuto;
-  }
-
-  // 3) Sinon (build .apk de production) : on tape le backend Render en ligne.
+  // 2) Par défaut PARTOUT (Expo Go, build .apk, web) : le backend Render en prod.
+  //    Le backend tourne en permanence en ligne, donc plus besoin de localhost.
+  //    (getDevBaseUrlFromExpo reste dispo si on réactive le mode local plus tard.)
   return DEFAULT_BASE_URL.replace(/\/$/, '');
 }
 
