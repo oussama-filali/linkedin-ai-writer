@@ -100,13 +100,24 @@ export default function LoginScreen() {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
         if (result.type === 'success' && result.url) {
-          // Supabase OAuth renvoie généralement un "code" (PKCE) -> on échange contre une session.
+          // PKCE : LinkedIn/Supabase renvoie un "code" dans l'URL de retour.
+          // On l'échange contre une vraie session (qui sera persistée).
           if (urlHasAuthCode(result.url)) {
-            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.url);
+            const { data: sessionData, error: exchangeError } =
+              await supabase.auth.exchangeCodeForSession(result.url);
             if (exchangeError) {
               throw exchangeError;
             }
+            // Session créée : on entre dans l'app. (onAuthStateChange dans
+            // use-auth.ts applique aussi la session, mais on force la nav ici
+            // pour un retour immédiat et fiable.)
+            if (sessionData?.session) {
+              router.replace('/(tabs)/home');
+            }
           }
+        } else if (result.type === 'cancel' || result.type === 'dismiss') {
+          // L'utilisateur a fermé le navigateur : on ne fait rien (pas d'erreur).
+          return;
         }
       }
     } catch (err) {
