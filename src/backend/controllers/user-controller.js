@@ -47,6 +47,64 @@ exports.getPreferences = async (req, res) => {
   }
 };
 
+/**
+ * RGPD — Export des données de l'utilisateur (droit à la portabilité).
+ * Renvoie toutes les données personnelles : profil, préférences, posts générés.
+ * GET /api/users/export
+ */
+exports.exportData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [user, prefs, posts] = await Promise.all([
+      db.query('SELECT id, email, name, linkedin_profile, created_at FROM users WHERE id = $1', [userId]),
+      db.query('SELECT * FROM user_preferences WHERE user_id = $1', [userId]),
+      db.query(
+        'SELECT id, objectif, sujet, post_type, generated_post, hashtags, sources, created_at FROM generations_history WHERE user_id = $1 ORDER BY created_at DESC',
+        [userId]
+      ),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        exportedAt: new Date().toISOString(),
+        profile: user.rows[0] || null,
+        preferences: prefs.rows[0] || null,
+        posts: posts.rows,
+        postsCount: posts.rows.length,
+      },
+    });
+  } catch (error) {
+    console.error('Erreur exportData (RGPD):', error.message);
+    res.status(500).json({ success: false, error: 'Impossible d\'exporter les données' });
+  }
+};
+
+/**
+ * RGPD — Suppression du compte et de TOUTES les données (droit à l'effacement).
+ * Supprime : posts, préférences, mémoire RAG, puis le compte utilisateur.
+ * DELETE /api/users/me
+ */
+exports.deleteAccount = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // Suppression en cascade explicite (au cas où les FK ne couvrent pas tout).
+    await db.query("DELETE FROM rag_chunks WHERE user_id = $1 AND kind = 'memory'", [userId]);
+    await db.query('DELETE FROM generations_history WHERE user_id = $1', [userId]);
+    await db.query('DELETE FROM user_preferences WHERE user_id = $1', [userId]);
+    await db.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    res.json({
+      success: true,
+      message: 'Compte et données supprimés définitivement.',
+    });
+  } catch (error) {
+    console.error('Erreur deleteAccount (RGPD):', error.message);
+    res.status(500).json({ success: false, error: 'Impossible de supprimer le compte' });
+  }
+};
+
 exports.updatePreferences = async (req, res) => {
   try {
     const allowedKeys = ['pushEnabled', 'autoPostEnabled', 'factCheckEnabled', 'notifyBeforeDefault', 'defaultSlot'];
