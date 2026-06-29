@@ -25,3 +25,22 @@ export async function updateUserPreferences(
     token,
   });
 }
+
+/** RGPD — Exporte toutes les données de l'utilisateur (droit à la portabilité). */
+export async function exportMyData(token?: string | null) {
+  return request<{
+    exportedAt: string;
+    profile: unknown;
+    preferences: unknown;
+    posts: unknown[];
+    postsCount: number;
+  }>('/users/export', { token });
+}
+
+/** RGPD — Supprime définitivement le compte et toutes les données. */
+export async function deleteMyAccount(token?: string | null) {
+  return request<{ message: string }>('/users/me', {
+    method: 'DELETE',
+    token,
+  });
+}

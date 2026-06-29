@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 
 import { useAuth } from '@/hooks/use-auth';
 import { UserPreferences, getUserPreferences, updateUserPreferences } from '@/services/preferences-service';
@@ -108,6 +109,19 @@ export default function SettingsScreen() {
           <Text style={styles.hintText}>Connecte-toi pour sauvegarder ces préférences.</Text>
         )}
       </View>
+
+      {/* Confidentialité & RGPD */}
+      <Pressable
+        onPress={() => router.push('/privacy')}
+        style={({ pressed }) => [styles.card, styles.linkCard, pressed && { opacity: 0.7 }]}>
+        <View>
+          <Text style={styles.sectionTitle}>Confidentialité & données</Text>
+          <Text style={styles.linkCardSubtitle}>
+            Voir mes données, les exporter ou supprimer mon compte (RGPD)
+          </Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
 
       {preferencesQuery.isFetching && isAuthenticated && (
         <ActivityIndicator size="small" color="#0a7ea4" />
@@ -237,5 +251,21 @@ const styles = StyleSheet.create({
   hintText: {
     color: '#94a3b8',
     fontSize: 12,
+  },
+  linkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  linkCardSubtitle: {
+    color: '#475467',
+    fontSize: 13,
+    marginTop: 4,
+    maxWidth: 260,
+  },
+  chevron: {
+    fontSize: 26,
+    color: '#94a3b8',
+    fontWeight: '300',
   },
 });

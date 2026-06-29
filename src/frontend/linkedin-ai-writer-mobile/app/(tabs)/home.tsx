@@ -13,6 +13,8 @@ import { useRouter } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { ScreenBackground } from '@/components/ScreenBackground';
+import { GlassCard } from '@/components/GlassCard';
 
 /** Renvoie les initiales d'un nom pour l'avatar de secours. */
 function getInitials(name?: string): string {
@@ -46,7 +48,8 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <ScreenBackground>
+      <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Photo de profil de l'utilisateur connecté (remplace l'ancienne animation 3D) */}
         <View style={styles.heroWrapper}>
@@ -80,14 +83,14 @@ export default function HomeScreen() {
             <Text style={styles.badgeText}>Tu n’es pas connecté</Text>
           </View>
         )}
-        <View style={styles.highlightWrapper}>
+        <GlassCard style={styles.highlightWrapper} contentStyle={{ gap: 12 }}>
           {highlights.map((item) => (
             <View key={item} style={styles.highlightItem}>
               <View style={styles.dot} />
               <Text style={styles.highlightText}>{item}</Text>
             </View>
           ))}
-        </View>
+        </GlassCard>
 
         <Pressable
           onPress={handlePrimaryAction}
@@ -108,14 +111,16 @@ export default function HomeScreen() {
           </Pressable>
         )}
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
+    // Transparent : on laisse voir le dégradé liquid glass du ScreenBackground.
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     alignItems: 'center',
@@ -192,15 +197,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   highlightWrapper: {
+    // Le fond/ombre/radius/padding sont gérés par GlassCard.
     width: '100%',
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    padding: 18,
     gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
   },
   highlightItem: {
     flexDirection: 'row',

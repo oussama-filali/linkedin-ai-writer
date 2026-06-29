@@ -94,6 +94,7 @@ export default function RootLayout() {
               options={{ presentation: 'modal', title: 'Connexion' }}
             />
             <Stack.Screen name="preview" options={{ title: 'Prévisualisation' }} />
+            <Stack.Screen name="privacy" options={{ title: 'Confidentialité' }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />
