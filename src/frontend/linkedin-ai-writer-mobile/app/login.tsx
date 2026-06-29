@@ -18,10 +18,6 @@ import { supabase } from '@/services/supabase-client';
 
 WebBrowser.maybeCompleteAuthSession();
 
-function urlHasAuthCode(url: string) {
-  return url.includes('code=');
-}
-
 export default function LoginScreen() {
   const router = useRouter();
   const { login, register, authenticating, error, isAuthenticated } = useAuth();
@@ -100,20 +96,24 @@ export default function LoginScreen() {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
         if (result.type === 'success' && result.url) {
-          // PKCE : LinkedIn/Supabase renvoie un "code" dans l'URL de retour.
-          // On l'échange contre une vraie session (qui sera persistée).
-          if (urlHasAuthCode(result.url)) {
+          // PKCE : on EXTRAIT le "code" de l'URL de retour, puis on l'échange.
+          // (Passer l'URL complète d'un scheme custom peut déclencher
+          //  "invalid flow state" ; on passe donc le code seul.)
+          const returnedUrl = result.url;
+          const codeMatch = returnedUrl.match(/[?&#]code=([^&]+)/);
+          const code = codeMatch ? decodeURIComponent(codeMatch[1]) : null;
+
+          if (code) {
             const { data: sessionData, error: exchangeError } =
-              await supabase.auth.exchangeCodeForSession(result.url);
+              await supabase.auth.exchangeCodeForSession(code);
             if (exchangeError) {
               throw exchangeError;
             }
-            // Session créée : on entre dans l'app. (onAuthStateChange dans
-            // use-auth.ts applique aussi la session, mais on force la nav ici
-            // pour un retour immédiat et fiable.)
             if (sessionData?.session) {
               router.replace('/(tabs)/home');
             }
+          } else {
+            throw new Error('Code d\'autorisation introuvable dans la réponse LinkedIn.');
           }
         } else if (result.type === 'cancel' || result.type === 'dismiss') {
           // L'utilisateur a fermé le navigateur : on ne fait rien (pas d'erreur).
